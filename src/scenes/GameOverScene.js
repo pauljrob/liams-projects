@@ -64,6 +64,7 @@ export default class GameOverScene extends Phaser.Scene {
       }).setOrigin(0.5);
 
       this.showLeaderboard(150, null, null);
+      this.showRestartPrompt();
     } else {
       // Show name input
       this.showNameInput(130);
