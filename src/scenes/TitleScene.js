@@ -220,10 +220,35 @@ export default class TitleScene extends Phaser.Scene {
       typed.setText('*'.repeat(passwordText.length) + '|');
     };
 
-    const submit = () => {
+    const submit = async () => {
       const pw = passwordText.trim();
+      if (!pw) return;
+      // Validate password by attempting a delete with a dummy ID
+      try {
+        const res = await fetch('/api/leaderboard', {
+          method: 'DELETE',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${pw}`,
+          },
+          body: JSON.stringify({ entryId: 'entry:validate-check' }),
+        });
+        // 401 = wrong password, 404 = correct password (entry not found)
+        if (res.status === 401) {
+          passwordText = '';
+          updateDisplay();
+          const err = this.add.text(W / 2, 40, 'Wrong password', {
+            fontSize: '14px', fill: '#ff4444', fontFamily: 'monospace',
+          }).setOrigin(0.5).setDepth(102);
+          elements.push(err);
+          this.time.delayedCall(2000, () => err.destroy());
+          return;
+        }
+      } catch (e) {
+        // Network error — let them try anyway
+      }
       closeInput();
-      if (pw) this.openAdminPanel(pw);
+      this.openAdminPanel(pw);
     };
 
     const typeLetter = (letter) => {
