@@ -4,7 +4,7 @@ export const GAME_CONFIG = {
   height: 600,
 
   // Economy
-  startingCredits: 500,
+  startingCredits: 750,
   rewards: {
     babyShip: 10,
     mothership: 100,
