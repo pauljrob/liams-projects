@@ -588,6 +588,7 @@ export default class GameScene extends Phaser.Scene {
       if (enemy.reachedBase) {
         this.enemies.splice(i, 1);
         this.damageBase();
+        if (this.baseHP <= 0) return; // scene is transitioning to Game Over
       } else if (enemy.dead) {
         this.credits += enemy.reward;
         this.enemies.splice(i, 1);
