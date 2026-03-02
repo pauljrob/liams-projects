@@ -312,6 +312,7 @@ export default class TitleScene extends Phaser.Scene {
   }
 
   openAdminPanel(password) {
+    this.adminOpen = true;
     const W = this.scale.width;
     const H = this.scale.height;
     this.adminOverlayElements = [];
