@@ -1,4 +1,5 @@
 import LeaderboardDisplay from '../ui/LeaderboardDisplay.js';
+import AdminLeaderboardDisplay from '../ui/AdminLeaderboardDisplay.js';
 
 export default class TitleScene extends Phaser.Scene {
   constructor() {
@@ -9,6 +10,7 @@ export default class TitleScene extends Phaser.Scene {
     const W = this.scale.width;
     const H = this.scale.height;
     this.leaderboardOpen = false;
+    this.adminOpen = false;
 
     // Star field background
     const starGfx = this.add.graphics();
@@ -99,7 +101,22 @@ export default class TitleScene extends Phaser.Scene {
     lbBtn.on('pointerover', () => lbBtn.setFill('#44eeff'));
     lbBtn.on('pointerout', () => lbBtn.setFill('#00ccff'));
     lbBtn.on('pointerdown', () => {
-      if (!this.leaderboardOpen) this.openLeaderboard();
+      if (!this.leaderboardOpen && !this.adminOpen) this.openLeaderboard();
+    });
+
+    // Admin button
+    const adminBtn = this.add.text(W / 2, H * 0.91, 'Admin', {
+      fontSize: '16px',
+      fill: '#00ccff',
+      fontFamily: 'monospace',
+      backgroundColor: '#112233',
+      padding: { x: 14, y: 6 },
+    }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+    adminBtn.on('pointerover', () => adminBtn.setFill('#44eeff'));
+    adminBtn.on('pointerout', () => adminBtn.setFill('#00ccff'));
+    adminBtn.on('pointerdown', () => {
+      if (!this.leaderboardOpen && !this.adminOpen) this.openAdminPasswordInput();
     });
 
     // Version / credits line
@@ -109,12 +126,14 @@ export default class TitleScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    // Start on click/tap (only when leaderboard is closed)
+    // Start on click/tap (only when overlays are closed)
     this.input.on('pointerdown', (pointer) => {
-      if (this.leaderboardOpen) return;
-      // Don't start game if clicking the leaderboard button area
+      if (this.leaderboardOpen || this.adminOpen) return;
+      // Don't start game if clicking button areas
       const lbBounds = lbBtn.getBounds();
       if (lbBounds.contains(pointer.x, pointer.y)) return;
+      const adminBounds = adminBtn.getBounds();
+      if (adminBounds.contains(pointer.x, pointer.y)) return;
 
       this.input.removeAllListeners('pointerdown');
       this.cameras.main.fadeOut(300, 0, 0, 16);
@@ -171,5 +190,163 @@ export default class TitleScene extends Phaser.Scene {
     }
     for (const el of this.lbOverlayElements) el.destroy();
     this.lbOverlayElements = [];
+  }
+
+  openAdminPasswordInput() {
+    this.adminOpen = true;
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const elements = [];
+
+    // Dim background
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85)
+      .setDepth(100).setInteractive();
+    elements.push(bg);
+
+    const prompt = this.add.text(W / 2, 60, 'Enter admin password:', {
+      fontSize: '16px', fill: '#aaaaaa', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(101);
+    elements.push(prompt);
+
+    const typed = this.add.text(W / 2, 100, '|', {
+      fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
+      backgroundColor: '#111111', padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(101);
+    elements.push(typed);
+
+    let passwordText = '';
+
+    const updateDisplay = () => {
+      typed.setText('*'.repeat(passwordText.length) + '|');
+    };
+
+    const submit = () => {
+      const pw = passwordText.trim();
+      closeInput();
+      if (pw) this.openAdminPanel(pw);
+    };
+
+    const typeLetter = (letter) => {
+      passwordText += letter;
+      updateDisplay();
+    };
+
+    const backspace = () => {
+      passwordText = passwordText.slice(0, -1);
+      updateDisplay();
+    };
+
+    // On-screen keyboard
+    const rows = [
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l'],
+      ['z','x','c','v','b','n','m'],
+    ];
+    const keySize = 34;
+    const keyGap = 4;
+    const startY = 150;
+
+    rows.forEach((row, ri) => {
+      const rowW = row.length * (keySize + keyGap) - keyGap;
+      const startX = (W - rowW) / 2;
+      row.forEach((letter, ci) => {
+        const x = startX + ci * (keySize + keyGap) + keySize / 2;
+        const y = startY + ri * (keySize + keyGap) + keySize / 2;
+
+        const keyBg = this.add.rectangle(x, y, keySize, keySize, 0x222233, 1)
+          .setDepth(101).setInteractive({ useHandCursor: true });
+        const keyTxt = this.add.text(x, y, letter, {
+          fontSize: '16px', fill: '#ffffff', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(102);
+
+        keyBg.on('pointerdown', () => {
+          typeLetter(letter);
+          keyBg.setFillStyle(0x00ffcc, 1);
+        });
+        keyBg.on('pointerup', () => keyBg.setFillStyle(0x222233, 1));
+        keyBg.on('pointerout', () => keyBg.setFillStyle(0x222233, 1));
+
+        elements.push(keyBg, keyTxt);
+      });
+    });
+
+    // Bottom row: Backspace, Submit, Cancel
+    const btnY = startY + 3 * (keySize + keyGap) + keySize / 2 + 8;
+    const btnStyle = { fontSize: '13px', fill: '#ffffff', fontFamily: 'monospace', padding: { x: 10, y: 8 } };
+
+    const delBtn = this.add.text(W / 2 - 130, btnY, 'Delete', {
+      ...btnStyle, backgroundColor: '#663333',
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+    delBtn.on('pointerdown', backspace);
+    elements.push(delBtn);
+
+    const submitBtn = this.add.text(W / 2, btnY, 'Submit', {
+      ...btnStyle, backgroundColor: '#336633',
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+    submitBtn.on('pointerdown', submit);
+    elements.push(submitBtn);
+
+    const cancelBtn = this.add.text(W / 2 + 130, btnY, 'Cancel', {
+      ...btnStyle, backgroundColor: '#333333',
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+    cancelBtn.on('pointerdown', () => closeInput());
+    elements.push(cancelBtn);
+
+    // Physical keyboard support
+    const keyHandler = (event) => {
+      if (event.key === 'Escape') { closeInput(); return; }
+      if (event.key === 'Enter') { submit(); return; }
+      if (event.key === 'Backspace') { backspace(); return; }
+      if (event.key.length === 1) { typeLetter(event.key); }
+    };
+
+    const closeInput = () => {
+      window.removeEventListener('keydown', keyHandler);
+      for (const el of elements) el.destroy();
+      if (!this.adminDisplay) this.adminOpen = false;
+    };
+
+    window.addEventListener('keydown', keyHandler);
+    this.adminPasswordElements = elements;
+    this.adminPasswordCleanup = closeInput;
+  }
+
+  openAdminPanel(password) {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    this.adminOverlayElements = [];
+
+    // Dim overlay
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88)
+      .setDepth(100).setInteractive();
+    this.adminOverlayElements.push(bg);
+
+    // Admin leaderboard display
+    this.adminDisplay = new AdminLeaderboardDisplay(this, W / 2, 40, {
+      limit: 20, password, depth: 101,
+    });
+    this.adminDisplay.show();
+
+    // Close button
+    const closeBtn = this.add.text(W / 2, H - 40, 'Close', {
+      fontSize: '16px',
+      fill: '#ffffff',
+      fontFamily: 'monospace',
+      backgroundColor: '#333344',
+      padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+
+    closeBtn.on('pointerdown', () => this.closeAdminPanel());
+    this.adminOverlayElements.push(closeBtn);
+  }
+
+  closeAdminPanel() {
+    this.adminOpen = false;
+    if (this.adminDisplay) {
+      this.adminDisplay.clear();
+      this.adminDisplay = null;
+    }
+    for (const el of this.adminOverlayElements || []) el.destroy();
+    this.adminOverlayElements = [];
   }
 }
