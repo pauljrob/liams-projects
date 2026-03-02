@@ -2,6 +2,8 @@
 
 A browser-based tower defense game built with Phaser 3. Defend your space base by building turrets to stop waves of alien invaders!
 
+**Play it now: [https://liams-projects.vercel.app](https://liams-projects.vercel.app)**
+
 ![Title Screen](assets/screenshots/title-screen.png)
 
 ![Gameplay](assets/screenshots/gameplay.png)
