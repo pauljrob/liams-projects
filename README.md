@@ -51,6 +51,17 @@ Cheat mode games are excluded from the leaderboard.
 
 Password-protected admin mode for managing leaderboard entries. Access it from the "Admin" button on the title screen. Allows deleting individual entries.
 
+## Environment Variables
+
+The leaderboard and admin features require the following environment variables (set in your Vercel project settings or in a local `.env.local` file):
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `REDIS_URL` | Yes | Redis connection string (e.g. `redis://...` or `rediss://...` for TLS) |
+| `ADMIN_PASSWORD` | Yes | Password for the admin panel to manage leaderboard entries |
+
+When setting these on Vercel, make sure the **Preview** checkbox is enabled if you want them available on preview/branch deployments.
+
 ## Running Locally
 
 Requires a local HTTP server (ES modules don't work over `file://`):
@@ -61,6 +72,8 @@ python3 -m http.server 8080
 ```
 
 Then open `http://localhost:8080` in your browser.
+
+To run with the leaderboard API locally, use `vercel dev` instead (requires the Vercel CLI and a `.env.local` file with the variables above).
 
 ## Tech Stack
 
