@@ -175,15 +175,6 @@ async function handleDelete(req, res) {
   const password = authHeader.replace(/^Bearer\s+/i, '');
   const adminPassword = process.env.ADMIN_PASSWORD;
 
-  console.log('DELETE debug:', {
-    hasAuthHeader: !!authHeader,
-    authHeaderLength: authHeader.length,
-    passwordLength: password.length,
-    hasEnvPassword: !!adminPassword,
-    envPasswordLength: adminPassword ? adminPassword.length : 0,
-    match: password === adminPassword,
-  });
-
   if (!adminPassword || password !== adminPassword) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
