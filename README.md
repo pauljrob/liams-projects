@@ -41,6 +41,16 @@ Your base has 3 HP. If 3 enemies reach the base, it's game over.
 - **EMP Frigates** — stun turrets temporarily (wave 5+)
 - **Boss** — massive mothership every 10th wave
 
+## Leaderboard
+
+After each game, enter your name to submit your score to the global leaderboard. Scores are ranked by wave reached, with faster times breaking ties. View the leaderboard from the title screen.
+
+Cheat mode games are excluded from the leaderboard.
+
+## Admin Mode
+
+Password-protected admin mode for managing leaderboard entries. Access it from the "Admin" button on the title screen. Allows deleting individual entries.
+
 ## Running Locally
 
 Requires a local HTTP server (ES modules don't work over `file://`):

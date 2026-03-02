@@ -21,6 +21,8 @@ space-tower-defense/
 ├── index.html                  # Entry point, loads Phaser via CDN, PWA meta tags
 ├── manifest.json               # Web app manifest (PWA standalone mode)
 ├── README.md                   # GitHub readme with screenshots
+├── api/
+│   └── leaderboard.js          # Vercel serverless — GET/POST/DELETE leaderboard (Redis)
 ├── src/
 │   ├── main.js                 # Phaser game config, scene list, window.__phaserGame exposed
 │   ├── config/
@@ -29,11 +31,14 @@ space-tower-defense/
 │   │   └── SoundManager.js     # Procedural sound effects (Web Audio API)
 │   ├── scenes/
 │   │   ├── BootScene.js        # Asset preloading (placeholder, assets TBD)
-│   │   ├── TitleScene.js       # Title screen — "Try to survive as many waves as you can!"
+│   │   ├── TitleScene.js       # Title screen, leaderboard view, admin mode
 │   │   ├── GameScene.js        # Core game loop, path, enemies, turrets, placement
 │   │   ├── UIScene.js          # Overlay HUD — credits, wave, HP, turret buttons, cheat menu
-│   │   ├── GameOverScene.js    # Lose screen
+│   │   ├── GameOverScene.js    # Game over — stats, name input, leaderboard submission
 │   │   └── VictoryScene.js     # Win screen
+│   ├── ui/
+│   │   ├── LeaderboardDisplay.js       # Read-only leaderboard renderer
+│   │   └── AdminLeaderboardDisplay.js  # Admin leaderboard with delete buttons
 │   └── entities/
 │       ├── Enemy.js            # Enemy class — path following, health bar, explosion
 │       ├── Turret.js           # Turret class + TURRET_DEFS, firing, projectiles, burn trails
@@ -42,6 +47,8 @@ space-tower-defense/
 │       ├── AttackPlane.js      # Air strike plane
 │       ├── Hamster.js          # Hamster turret (secret)
 │       └── UltraHamster.js     # Ultra Hamster (secret, unlocked via cheat code)
+├── docs/
+│   └── features/               # Feature specs (one markdown per feature)
 ├── assets/
 │   ├── screenshots/            # Title screen + gameplay screenshots for README
 │   ├── images/                 # (empty — all graphics are procedural for now)
@@ -55,7 +62,7 @@ space-tower-defense/
 - **Endless waves** — survive as many as you can
 - **Mothership spawns after all baby ships are destroyed** (with "MOTHERSHIP INCOMING!" warning)
 - **Boss wave every 10th wave** — massive mothership, no baby ships
-- **Economy:** Start with 500 credits, earn 10cr per Baby Ship, 100cr per Mothership
+- **Economy:** Start with 750 credits, earn 10cr per Baby Ship, 100cr per Mothership
 - **Lose condition:** 3 enemy hits on the space base = game over
 - **Scaling:** More baby ships, tougher enemies, faster fire rates each wave
 
@@ -102,6 +109,12 @@ space-tower-defense/
 - [x] Procedural sound effects (Web Audio API)
 - [x] PWA support — fullscreen standalone mode on iPhone via "Add to Home Screen"
 - [x] Safe area handling for iPhone (notch + home indicator)
+- [x] Global leaderboard (Redis-backed via Vercel serverless, scores ranked by wave then time)
+- [x] Leaderboard on title screen and game over screen
+- [x] Name input on game over for leaderboard submission
+- [x] Cheat mode games excluded from leaderboard
+- [x] Admin mode — password-protected leaderboard management (delete entries) on title screen
+- [x] Admin password validation against server before showing admin panel
 
 ### What's Not Built Yet
 - [ ] Credits earned visual feedback on kill
@@ -132,7 +145,24 @@ space-tower-defense/
 - **Live URL:** `https://liams-projects.vercel.app`
 - **Testing on iPhone:** Push to GitHub → Vercel deploys automatically → open live URL on iPhone Safari
 
+### Feature Development Workflow
+When adding a new feature:
+1. **Create a feature branch** — `git checkout -b feature/<feature-name>`
+2. **Create a feature spec** — `docs/features/<feature-name>.md` describing the feature, API, UI flow, files changed
+3. **Build on the feature branch** — commit, push, create a PR
+4. **Merge to main** when the feature is complete and tested, then delete the feature branch (local + remote)
+
+### Leaderboard & Admin
+- **Backend:** Vercel serverless function (`api/leaderboard.js`) with Redis (ioredis)
+- **Storage:** Redis sorted set (`leaderboard`) for ranking + Redis hashes for entry metadata
+- **Composite score:** `wave * 1_000_000_000 + (999_999_999 - timeSurvivedMs)` — wave primary, faster time breaks ties
+- **Entry IDs:** `entry:<timestamp>-<random>` (e.g., `entry:1709312345678-a1b2c3d4`)
+- **Admin auth:** `Authorization: Bearer <password>` header, validated against `ADMIN_PASSWORD` env var
+- **Env vars on Vercel:** `REDIS_URL`, `ADMIN_PASSWORD` (must have Preview checkbox enabled for preview deploys)
+
 ### Tech Stack
 - **Phaser 3.60.0** via CDN (WebGL renderer, Canvas fallback)
 - **ES Modules** — no bundler, pure browser native modules
 - **Phaser.Scale.FIT** — scales to fit any screen size (desktop + iPhone)
+- **Vercel** — hosting + serverless functions
+- **Redis** (via ioredis) — leaderboard storage
