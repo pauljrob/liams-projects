@@ -59,6 +59,8 @@ export default class UIScene extends Phaser.Scene {
         uhBtn.setVisible(true);
         uhBtn.setText('ULTRA\nHAMSTER\n(FREE)');
       }
+      const amBtn = this.buttons.find(b => b.turretType === 'adminMissile');
+      if (amBtn) amBtn.setVisible(true);
       this.showCheatExtras();
     }
   }
@@ -88,6 +90,7 @@ export default class UIScene extends Phaser.Scene {
       { label: `Plane (${GAME_CONFIG.turretCosts.attackPlane}cr)`,  type: 'attackPlane' },
       { label: `Hamster (${GAME_CONFIG.turretCosts.hamster}cr)`,    type: 'hamster' },
       { label: `ULTRA HAMSTER`,                                      type: 'ultraHamster', hidden: true },
+      { label: `ADMIN MISSILE (${GAME_CONFIG.turretCosts.adminMissile}cr)`, type: 'adminMissile', hidden: true },
     ];
 
     // Split visible defs into two rows (roughly half each)
@@ -235,6 +238,8 @@ export default class UIScene extends Phaser.Scene {
           uhBtn.setText('ULTRA HAMSTER (FREE)');
         }
         GAME_CONFIG.turretCosts.ultraHamster = 0;
+        const amBtn = this.buttons.find(b => b.turretType === 'adminMissile');
+        if (amBtn) amBtn.setVisible(true);
         this.showCheatExtras();
         const flash = this.add.text(W / 2, H / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
           fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
@@ -482,6 +487,8 @@ export default class UIScene extends Phaser.Scene {
           uhBtn.setVisible(true);
           uhBtn.setText('ULTRA\nHAMSTER\n(FREE)');
         }
+        const amBtn = this.buttons.find(b => b.turretType === 'adminMissile');
+        if (amBtn) amBtn.setVisible(true);
         this.showCheatExtras();
         const W = GAME_CONFIG.width;
         const H = GAME_CONFIG.height;
