@@ -213,7 +213,7 @@ export default class AttackPlane {
         p.dead = true;
         if (!p.target.dead && !p.target.reachedBase) p.target.takeDamage(p.damage);
       }
-      if (p.x < -50 || p.x > 850 || p.y < -50 || p.y > 650) p.dead = true;
+      if (p.x < -50 || p.x > this.scene.scale.width + 50 || p.y < -50 || p.y > this.scene.scale.height + 50) p.dead = true;
     }
   }
 
