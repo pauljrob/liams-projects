@@ -69,7 +69,8 @@ export default class UIScene extends Phaser.Scene {
     const BTN_H = 29;
     const ROW_GAP = 4;
     const W = GAME_CONFIG.width;
-    const row2Y = GAME_CONFIG.height - 4;     // bottom row (originY=1)
+    const SAFE_BOTTOM = 20; // extra padding for iPhone home indicator / safe area
+    const row2Y = GAME_CONFIG.height - 4 - SAFE_BOTTOM;     // bottom row (originY=1)
     const row1Y = row2Y - BTN_H - ROW_GAP;    // top row (originY=1)
 
     const charW = 8;
@@ -149,7 +150,7 @@ export default class UIScene extends Phaser.Scene {
     this.gameScene.selectTurretType(type);
 
     if (!this.hintText) {
-      this.hintText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 75,
+      this.hintText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 95,
         'Click to place  |  ESC or right-click to cancel', {
           fontSize: '11px',
           fill: '#aaaaaa',

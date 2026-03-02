@@ -2,7 +2,11 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="Space TD" />
+  <link rel="manifest" href="manifest.json" />
   <title>Space Tower Defense</title>
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
@@ -11,8 +15,9 @@
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
+      padding-bottom: env(safe-area-inset-bottom, 0px);
     }
     canvas { display: block; }
   </style>
