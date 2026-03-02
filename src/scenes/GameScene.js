@@ -392,7 +392,7 @@ export default class GameScene extends Phaser.Scene {
         const clusterSize = Math.max(3, Math.floor(wave * 3));
         for (let i = 0; i < babyCount; i++) {
           const posInCluster = i % clusterSize;
-          const delay = posInCluster === 0 && i > 0 ? 700 : 50;
+          const delay = posInCluster === 0 && i > 0 ? 900 : 400;
           this.spawnQueue.push({ type: 'babyShip', speed: babySpeed, hp: babyHP, delay });
         }
 
