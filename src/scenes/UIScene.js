@@ -1,6 +1,7 @@
 import { GAME_CONFIG } from '../config/gameConfig.js';
 import { UPGRADE_DEFS } from '../entities/Turret.js';
 import { UPGRADE_DEFS_MG } from '../entities/MachineGun.js';
+import AdminLeaderboardDisplay from '../ui/AdminLeaderboardDisplay.js';
 
 export default class UIScene extends Phaser.Scene {
   constructor() {
@@ -39,6 +40,7 @@ export default class UIScene extends Phaser.Scene {
     this.createTurretButtons();
     this.setupSecretCode();
     this.createCodesPanel();
+    this.createAdminLink();
     this.createSkipWaveButton();
 
     // Listen for turret clicks from GameScene
@@ -352,6 +354,184 @@ export default class UIScene extends Phaser.Scene {
     window.addEventListener('keydown', keyHandler, true);
   }
 
+  createAdminLink() {
+    const adminLink = this.add.text(GAME_CONFIG.width - 10, 68, '🔧 Admin', {
+      fontSize: '12px',
+      fill: '#666666',
+      fontFamily: 'monospace',
+      align: 'right',
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+    adminLink.on('pointerdown', () => this.openAdminPasswordInput());
+    adminLink.on('pointerover', () => adminLink.setStyle({ fill: '#ffffff' }));
+    adminLink.on('pointerout', () => adminLink.setStyle({ fill: '#666666' }));
+  }
+
+  openAdminPasswordInput() {
+    if (this.adminInput) return;
+    if (this.codeInput) return;
+
+    const W = GAME_CONFIG.width;
+    const H = GAME_CONFIG.height;
+    const elements = [];
+
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85)
+      .setDepth(199).setInteractive();
+    elements.push(bg);
+
+    const prompt = this.add.text(W / 2, 60, '🔧 Enter admin password:', {
+      fontSize: '16px', fill: '#ff8844', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(200);
+    elements.push(prompt);
+
+    this.adminTyped = '';
+    const typed = this.add.text(W / 2, 100, '|', {
+      fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
+      backgroundColor: '#111111', padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(200);
+    elements.push(typed);
+
+    const updateDisplay = () => {
+      typed.setText('*'.repeat(this.adminTyped.length) + '|');
+    };
+
+    const submitPassword = () => {
+      const password = this.adminTyped.trim();
+      closeInput();
+      if (password.length > 0) {
+        this.openAdminPanel(password);
+      }
+    };
+
+    const typeLetter = (letter) => {
+      this.adminTyped += letter;
+      updateDisplay();
+    };
+
+    const backspace = () => {
+      this.adminTyped = this.adminTyped.slice(0, -1);
+      updateDisplay();
+    };
+
+    const rows = [
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l'],
+      ['z','x','c','v','b','n','m'],
+    ];
+    const keySize = 34;
+    const keyGap = 4;
+    const startY = 150;
+
+    rows.forEach((row, ri) => {
+      const rowW = row.length * (keySize + keyGap) - keyGap;
+      const startX = (W - rowW) / 2;
+      row.forEach((letter, ci) => {
+        const x = startX + ci * (keySize + keyGap) + keySize / 2;
+        const y = startY + ri * (keySize + keyGap) + keySize / 2;
+
+        const keyBg = this.add.rectangle(x, y, keySize, keySize, 0x222233, 1)
+          .setDepth(200).setInteractive({ useHandCursor: true });
+        const keyTxt = this.add.text(x, y, letter, {
+          fontSize: '16px', fill: '#ffffff', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(201);
+
+        keyBg.on('pointerdown', () => {
+          typeLetter(letter);
+          keyBg.setFillStyle(0x00ffcc, 1);
+        });
+        keyBg.on('pointerup', () => keyBg.setFillStyle(0x222233, 1));
+        keyBg.on('pointerout', () => keyBg.setFillStyle(0x222233, 1));
+
+        elements.push(keyBg, keyTxt);
+      });
+    });
+
+    const btnY = startY + 3 * (keySize + keyGap) + keySize / 2 + 8;
+    const btnStyle = { fontSize: '13px', fill: '#ffffff', fontFamily: 'monospace', padding: { x: 10, y: 8 } };
+
+    const delBtn = this.add.text(W / 2 - 130, btnY, '⌫ Delete', {
+      ...btnStyle, backgroundColor: '#663333',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    delBtn.on('pointerdown', backspace);
+    elements.push(delBtn);
+
+    const submitBtn = this.add.text(W / 2, btnY, '✓ Submit', {
+      ...btnStyle, backgroundColor: '#336633',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    submitBtn.on('pointerdown', submitPassword);
+    elements.push(submitBtn);
+
+    const cancelBtn = this.add.text(W / 2 + 130, btnY, '✕ Cancel', {
+      ...btnStyle, backgroundColor: '#333333',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    cancelBtn.on('pointerdown', () => closeInput());
+    elements.push(cancelBtn);
+
+    this.adminInput = { elements };
+
+    const keyHandler = (event) => {
+      if (!this.adminInput) return;
+      if (event.key === 'Escape') { closeInput(); return; }
+      if (event.key === 'Enter') { submitPassword(); return; }
+      if (event.key === 'Backspace') { backspace(); return; }
+      if (event.key.length === 1) { typeLetter(event.key); }
+    };
+
+    const closeInput = () => {
+      if (!this.adminInput) return;
+      for (const el of this.adminInput.elements) el.destroy();
+      this.adminInput = null;
+      window.removeEventListener('keydown', keyHandler, true);
+    };
+
+    window.addEventListener('keydown', keyHandler, true);
+  }
+
+  openAdminPanel(password) {
+    if (this.adminPanel) return;
+
+    const W = GAME_CONFIG.width;
+    const H = GAME_CONFIG.height;
+    const elements = [];
+
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.88)
+      .setDepth(199).setInteractive();
+    elements.push(bg);
+
+    const title = this.add.text(W / 2, 14, '🔧 ADMIN — Click [X] to delete entries', {
+      fontSize: '13px', fill: '#ff8844', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(200);
+    elements.push(title);
+
+    const adminLb = new AdminLeaderboardDisplay(this, W / 2, 36, {
+      limit: 20,
+      password: password,
+      depth: 200,
+    });
+    adminLb.show().then(() => {
+      adminLb.elements.forEach(el => el.setDepth(200));
+    });
+
+    const closeBtn = this.add.text(W / 2, H - 30, 'Close', {
+      fontSize: '16px', fill: '#ffffff', fontFamily: 'monospace',
+      backgroundColor: '#333344', padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+
+    closeBtn.on('pointerdown', () => this.closeAdminPanel());
+    elements.push(closeBtn);
+
+    this.adminPanel = { elements, adminLb };
+  }
+
+  closeAdminPanel() {
+    if (!this.adminPanel) return;
+    if (this.adminPanel.adminLb) {
+      this.adminPanel.adminLb.clear();
+    }
+    for (const el of this.adminPanel.elements) el.destroy();
+    this.adminPanel = null;
+  }
+
   createSkipWaveButton() {
     this.stopWaveBtn = this.add.text(GAME_CONFIG.width / 2 - 210, 10, '⏹ Stop Wave', {
       fontSize: '13px',
@@ -516,6 +696,7 @@ export default class UIScene extends Phaser.Scene {
     // Clean up when scene shuts down
     this.events.on('shutdown', () => {
       window.removeEventListener('keydown', this._secretKeyHandler);
+      this.closeAdminPanel();
     });
   }
 

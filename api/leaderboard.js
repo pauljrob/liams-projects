@@ -20,16 +20,16 @@ const MAX_ENTRIES = 100;
 const headers = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, OPTIONS',
-  'Access-Control-Allow-Headers': 'Content-Type',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
 export default async function handler(req, res) {
   // CORS preflight
   if (req.method === 'OPTIONS') {
     return res.status(204).setHeader('Access-Control-Allow-Origin', '*')
-      .setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS')
-      .setHeader('Access-Control-Allow-Headers', 'Content-Type')
+      .setHeader('Access-Control-Allow-Methods', 'GET, POST, DELETE, OPTIONS')
+      .setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization')
       .end();
   }
 
@@ -41,6 +41,9 @@ export default async function handler(req, res) {
     }
     if (req.method === 'POST') {
       return await handlePost(req, res);
+    }
+    if (req.method === 'DELETE') {
+      return await handleDelete(req, res);
     }
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
@@ -70,6 +73,7 @@ async function handleGet(req, res) {
   const entries = results.map(([err, data], i) => {
     if (err || !data || !data.name) return null;
     return {
+      id: entryIds[i],
       rank: i + 1,
       name: data.name,
       wave: parseInt(data.wave, 10),
@@ -163,4 +167,35 @@ async function handlePost(req, res) {
     rank: rank !== null ? rank + 1 : null,
     totalEntries: currentTotal,
   });
+}
+
+async function handleDelete(req, res) {
+  // Verify admin password
+  const authHeader = req.headers['authorization'] || '';
+  const password = authHeader.replace('Bearer ', '');
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminPassword || password !== adminPassword) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const { entryId } = req.body || {};
+  if (!entryId || typeof entryId !== 'string' || !entryId.startsWith('entry:')) {
+    return res.status(400).json({ error: 'Invalid entry ID' });
+  }
+
+  const kv = getRedis();
+
+  // Remove from sorted set and delete the hash
+  const pipeline = kv.pipeline();
+  pipeline.zrem(LEADERBOARD_KEY, entryId);
+  pipeline.del(entryId);
+  const results = await pipeline.exec();
+
+  const removed = results[0][1]; // number of members removed from sorted set
+  if (removed === 0) {
+    return res.status(404).json({ error: 'Entry not found' });
+  }
+
+  return res.status(200).json({ success: true, removedId: entryId });
 }
