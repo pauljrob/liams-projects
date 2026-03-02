@@ -37,7 +37,7 @@ export const TURRET_DEFS = {
     range: 320,
     damage: 50,
     fireRate: 100,
-    projectileSpeed: 160,
+    projectileSpeed: 600,
     projectileColor: 0xff00ff,
     projectileSize: 6,
     splash: 60,
