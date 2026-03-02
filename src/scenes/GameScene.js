@@ -32,6 +32,7 @@ export default class GameScene extends Phaser.Scene {
     this.spawnQueue = [];
     this.spawnTimer = 0;
     this.pendingMothership = null;
+    this.mothershipSpawning = false;
     this.timeScale = 1;
     this.spawnInterval = this.randomSpawnInterval(); // randomized ms between each enemy spawn
 
@@ -556,6 +557,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.waveActive && this.pendingMothership && this.spawnQueue.length === 0 && this.enemies.length === 0) {
       const ms = this.pendingMothership;
       this.pendingMothership = null;
+      this.mothershipSpawning = true;
 
       // "Mothership incoming!" warning
       const W = this.scale.width;
@@ -573,6 +575,7 @@ export default class GameScene extends Phaser.Scene {
         onComplete: () => {
           warn.destroy();
           this.spawnEnemy(ms);
+          this.mothershipSpawning = false;
         },
       });
     }
@@ -672,7 +675,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Check if wave is finished
-    if (this.waveActive && this.spawnQueue.length === 0 && this.enemies.length === 0 && !this.pendingMothership) {
+    if (this.waveActive && this.spawnQueue.length === 0 && this.enemies.length === 0 && !this.pendingMothership && !this.mothershipSpawning) {
       this.waveActive = false;
       this.timeScale = 1;
       this.events.emit('timeScaleChanged', 1);
