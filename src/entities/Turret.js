@@ -35,7 +35,7 @@ export const TURRET_DEFS = {
   adminMissile: {
     color: 0xff00ff,
     range: 320,
-    damage: 250,
+    damage: 500,
     fireRate: 100,
     projectileSpeed: 600,
     projectileColor: 0xff00ff,
