@@ -36,6 +36,11 @@ export default class GameScene extends Phaser.Scene {
     this.timeScale = 1;
     this.spawnInterval = this.randomSpawnInterval(); // randomized ms between each enemy spawn
 
+    // Leaderboard stats
+    this.totalKills = 0;
+    this.totalCreditsEarned = 0;
+    this.gameStartTime = Date.now();
+
     this.selectedTurretType = null;
     this.placementPreview = null;
 
@@ -594,6 +599,8 @@ export default class GameScene extends Phaser.Scene {
         if (this.baseHP <= 0) return; // scene is transitioning to Game Over
       } else if (enemy.dead) {
         this.credits += enemy.reward;
+        this.totalCreditsEarned += enemy.reward;
+        this.totalKills++;
         this.enemies.splice(i, 1);
       }
     }
@@ -741,7 +748,13 @@ export default class GameScene extends Phaser.Scene {
       this.waveActive = false;
       this.enemies = [];
       this.scene.stop('UIScene');
-      this.scene.start('GameOverScene');
+      this.scene.start('GameOverScene', {
+        wave: this.currentWave,
+        kills: this.totalKills,
+        creditsEarned: this.totalCreditsEarned,
+        timeSurvivedMs: Date.now() - this.gameStartTime,
+        cheatMode: this.cheatMode,
+      });
     }
   }
 

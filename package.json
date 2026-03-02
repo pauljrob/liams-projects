@@ -1,0 +1,7 @@
+{
+  "name": "space-tower-defense",
+  "private": true,
+  "dependencies": {
+    "ioredis": "^5.4.1"
+  }
+}
