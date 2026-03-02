@@ -195,35 +195,26 @@ export default class UIScene extends Phaser.Scene {
   openCodeInput() {
     if (this.codeInput) return;
 
-    // Dim background box
-    const bg = this.add.rectangle(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, 320, 100, 0x000000, 0.85)
-      .setDepth(199);
+    const W = GAME_CONFIG.width;
+    const H = GAME_CONFIG.height;
+    const elements = [];
 
-    const prompt = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 - 24,
-      '🔐 Enter secret code:', {
-        fontSize: '14px',
-        fill: '#aaaaaa',
-        fontFamily: 'monospace',
-      }).setOrigin(0.5).setDepth(200);
+    // Dim background — full screen
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85).setDepth(199);
+    elements.push(bg);
 
-    const typed = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 4,
-      '|', {
-        fontSize: '18px',
-        fill: '#ffdd00',
-        fontFamily: 'monospace',
-        backgroundColor: '#111111',
-        padding: { x: 12, y: 6 },
-      }).setOrigin(0.5).setDepth(200);
+    const prompt = this.add.text(W / 2, 60, '🔐 Enter secret code:', {
+      fontSize: '16px', fill: '#aaaaaa', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(200);
+    elements.push(prompt);
 
-    const hint = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2 + 34,
-      'Press Enter to submit  |  Esc to cancel', {
-        fontSize: '10px',
-        fill: '#666666',
-        fontFamily: 'monospace',
-      }).setOrigin(0.5).setDepth(200);
+    const typed = this.add.text(W / 2, 100, '|', {
+      fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
+      backgroundColor: '#111111', padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(200);
+    elements.push(typed);
 
     this.codeInputTyped = '';
-    this.codeInput = { bg, prompt, typed, hint };
 
     const updateDisplay = () => {
       typed.setText((this.codeInputTyped || '') + '|');
@@ -231,80 +222,122 @@ export default class UIScene extends Phaser.Scene {
 
     const SECRET = 'inside';
 
+    const submitCode = () => {
+      const guess = this.codeInputTyped.toLowerCase().trim();
+      closeInput();
+      if (guess === SECRET && !this.ultraUnlocked) {
+        this.ultraUnlocked = true;
+        const uhBtn = this.buttons.find(b => b.turretType === 'ultraHamster');
+        if (uhBtn) {
+          uhBtn.setVisible(true);
+          uhBtn.setText('ULTRA HAMSTER (FREE)');
+        }
+        GAME_CONFIG.turretCosts.ultraHamster = 0;
+        this.showCheatExtras();
+        const flash = this.add.text(W / 2, H / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
+          fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
+          stroke: '#000000', strokeThickness: 4,
+        }).setOrigin(0.5).setDepth(200);
+        this.tweens.add({
+          targets: flash, alpha: 0, y: H / 2 - 60, duration: 2000,
+          onComplete: () => flash.destroy(),
+        });
+      } else if (guess !== SECRET) {
+        const wrong = this.add.text(W / 2, H / 2, '❌ Unknown code', {
+          fontSize: '16px', fill: '#ff4444', fontFamily: 'monospace',
+          stroke: '#000000', strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(200);
+        this.tweens.add({
+          targets: wrong, alpha: 0, y: H / 2 - 40, duration: 1200,
+          onComplete: () => wrong.destroy(),
+        });
+      }
+    };
+
+    const typeLetter = (letter) => {
+      this.codeInputTyped += letter;
+      updateDisplay();
+    };
+
+    const backspace = () => {
+      this.codeInputTyped = this.codeInputTyped.slice(0, -1);
+      updateDisplay();
+    };
+
+    // On-screen keyboard
+    const rows = [
+      ['q','w','e','r','t','y','u','i','o','p'],
+      ['a','s','d','f','g','h','j','k','l'],
+      ['z','x','c','v','b','n','m'],
+    ];
+    const keySize = 34;
+    const keyGap = 4;
+    const startY = 150;
+
+    rows.forEach((row, ri) => {
+      const rowW = row.length * (keySize + keyGap) - keyGap;
+      const startX = (W - rowW) / 2;
+      row.forEach((letter, ci) => {
+        const x = startX + ci * (keySize + keyGap) + keySize / 2;
+        const y = startY + ri * (keySize + keyGap) + keySize / 2;
+
+        const keyBg = this.add.rectangle(x, y, keySize, keySize, 0x222233, 1)
+          .setDepth(200).setInteractive({ useHandCursor: true });
+        const keyTxt = this.add.text(x, y, letter, {
+          fontSize: '16px', fill: '#ffffff', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(201);
+
+        keyBg.on('pointerdown', () => {
+          typeLetter(letter);
+          keyBg.setFillStyle(0x00ffcc, 1);
+        });
+        keyBg.on('pointerup', () => keyBg.setFillStyle(0x222233, 1));
+        keyBg.on('pointerout', () => keyBg.setFillStyle(0x222233, 1));
+
+        elements.push(keyBg, keyTxt);
+      });
+    });
+
+    // Bottom row: Backspace, Submit, Cancel
+    const btnY = startY + 3 * (keySize + keyGap) + keySize / 2 + 8;
+    const btnStyle = { fontSize: '13px', fill: '#ffffff', fontFamily: 'monospace', padding: { x: 10, y: 8 } };
+
+    const delBtn = this.add.text(W / 2 - 130, btnY, '⌫ Delete', {
+      ...btnStyle, backgroundColor: '#663333',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    delBtn.on('pointerdown', backspace);
+    elements.push(delBtn);
+
+    const submitBtn = this.add.text(W / 2, btnY, '✓ Submit', {
+      ...btnStyle, backgroundColor: '#336633',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    submitBtn.on('pointerdown', submitCode);
+    elements.push(submitBtn);
+
+    const cancelBtn = this.add.text(W / 2 + 130, btnY, '✕ Cancel', {
+      ...btnStyle, backgroundColor: '#333333',
+    }).setOrigin(0.5).setDepth(200).setInteractive({ useHandCursor: true });
+    cancelBtn.on('pointerdown', () => closeInput());
+    elements.push(cancelBtn);
+
+    this.codeInput = { elements };
+
+    // Physical keyboard still works too
     const keyHandler = (event) => {
       if (!this.codeInput) return;
-
-      if (event.key === 'Escape') {
-        closeInput();
-        return;
-      }
-
-      if (event.key === 'Enter') {
-        const guess = this.codeInputTyped.toLowerCase().trim();
-        closeInput();
-        if (guess === SECRET && !this.ultraUnlocked) {
-          this.ultraUnlocked = true;
-          const uhBtn = this.buttons.find(b => b.turretType === 'ultraHamster');
-          if (uhBtn) {
-            uhBtn.setVisible(true);
-            uhBtn.setText('ULTRA HAMSTER (FREE)');
-          }
-          GAME_CONFIG.turretCosts.ultraHamster = 0;
-          this.showCheatExtras();
-          const flash = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
-            fontSize: '22px',
-            fill: '#ffdd00',
-            fontFamily: 'monospace',
-            stroke: '#000000',
-            strokeThickness: 4,
-          }).setOrigin(0.5).setDepth(200);
-          this.tweens.add({
-            targets: flash,
-            alpha: 0,
-            y: GAME_CONFIG.height / 2 - 60,
-            duration: 2000,
-            onComplete: () => flash.destroy(),
-          });
-        } else if (guess !== SECRET) {
-          const wrong = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2,
-            '❌ Unknown code', {
-              fontSize: '16px',
-              fill: '#ff4444',
-              fontFamily: 'monospace',
-              stroke: '#000000',
-              strokeThickness: 3,
-            }).setOrigin(0.5).setDepth(200);
-          this.tweens.add({
-            targets: wrong,
-            alpha: 0,
-            y: GAME_CONFIG.height / 2 - 40,
-            duration: 1200,
-            onComplete: () => wrong.destroy(),
-          });
-        }
-        return;
-      }
-
-      if (event.key === 'Backspace') {
-        this.codeInputTyped = this.codeInputTyped.slice(0, -1);
-      } else if (event.key.length === 1) {
-        this.codeInputTyped += event.key;
-      }
-
-      updateDisplay();
+      if (event.key === 'Escape') { closeInput(); return; }
+      if (event.key === 'Enter') { submitCode(); return; }
+      if (event.key === 'Backspace') { backspace(); return; }
+      if (event.key.length === 1) { typeLetter(event.key); }
     };
 
     const closeInput = () => {
       if (!this.codeInput) return;
-      bg.destroy();
-      prompt.destroy();
-      typed.destroy();
-      hint.destroy();
+      for (const el of this.codeInput.elements) el.destroy();
       this.codeInput = null;
       window.removeEventListener('keydown', keyHandler, true);
     };
 
-    // Use capture phase so this takes priority over the background listener
     window.addEventListener('keydown', keyHandler, true);
   }
 
