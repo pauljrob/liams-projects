@@ -3,8 +3,11 @@ import Redis from 'ioredis';
 let redis;
 function getRedis() {
   if (!redis) {
-    redis = new Redis(process.env.REDIS_URL, {
-      tls: { rejectUnauthorized: false },
+    const url = process.env.REDIS_URL || '';
+    const useTls = url.startsWith('rediss://');
+    redis = new Redis(url, {
+      ...(useTls ? { tls: { rejectUnauthorized: false } } : {}),
+      maxRetriesPerRequest: 3,
       lazyConnect: true,
     });
   }
