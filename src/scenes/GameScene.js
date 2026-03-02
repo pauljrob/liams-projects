@@ -144,12 +144,12 @@ export default class GameScene extends Phaser.Scene {
   createBackground() {
     const graphics = this.add.graphics();
     graphics.fillStyle(0x000010, 1);
-    graphics.fillRect(0, 0, this.scale.width, this.scale.height);
+    graphics.fillRect(0, 0, GAME_CONFIG.width, GAME_CONFIG.height);
 
     // Star field — two layers for depth
     for (let i = 0; i < 200; i++) {
-      const x = Phaser.Math.Between(0, this.scale.width);
-      const y = Phaser.Math.Between(0, this.scale.height);
+      const x = Phaser.Math.Between(0, GAME_CONFIG.width);
+      const y = Phaser.Math.Between(0, GAME_CONFIG.height);
       const size = Phaser.Math.FloatBetween(0.3, 1.5);
       const alpha = Phaser.Math.FloatBetween(0.2, 1);
       graphics.fillStyle(0xffffff, alpha);
@@ -164,8 +164,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createPath() {
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = GAME_CONFIG.width;
+    const H = GAME_CONFIG.height;
 
     // Winding path across the screen — enemies enter left, exit right
     this.enemyPath = new Phaser.Curves.Path(-30, H * 0.5);
@@ -194,8 +194,8 @@ export default class GameScene extends Phaser.Scene {
   }
 
   createBase() {
-    const baseX = this.scale.width - 30;
-    const baseY = this.scale.height * 0.4;
+    const baseX = GAME_CONFIG.width - 30;
+    const baseY = GAME_CONFIG.height * 0.4;
 
     const g = this.add.graphics();
 
@@ -227,7 +227,7 @@ export default class GameScene extends Phaser.Scene {
     });
 
     this.input.on('pointerdown', (pointer) => {
-      if (pointer.y > this.scale.height - 70) return;
+      if (pointer.y > GAME_CONFIG.height - 70) return;
       if (this.selectedTurretType) {
         this.placeTurret(pointer.x, pointer.y);
         return;
@@ -281,7 +281,7 @@ export default class GameScene extends Phaser.Scene {
   isValidPlacement(x, y, type) {
     // Hamsters launch from path end — any click on the map is valid
     if (type === 'hamster' || type === 'ultraHamster') {
-      if (x < 10 || x > this.scale.width - 10 || y < 10 || y > this.scale.height - 60) return false;
+      if (x < 10 || x > GAME_CONFIG.width - 10 || y < 10 || y > GAME_CONFIG.height - 60) return false;
       return true;
     }
 
@@ -324,7 +324,7 @@ export default class GameScene extends Phaser.Scene {
     }
 
     // Must be within game bounds
-    if (x < 10 || x > this.scale.width - 10 || y < 10 || y > this.scale.height - 60) return false;
+    if (x < 10 || x > GAME_CONFIG.width - 10 || y < 10 || y > GAME_CONFIG.height - 60) return false;
     return true;
   }
 
@@ -665,7 +665,7 @@ export default class GameScene extends Phaser.Scene {
         }
       }
 
-      if (hit || p.x < -50 || p.x > this.scale.width + 50 || p.y < -50 || p.y > this.scale.height + 50) {
+      if (hit || p.x < -50 || p.x > GAME_CONFIG.width + 50 || p.y < -50 || p.y > GAME_CONFIG.height + 50) {
         p.graphic.destroy();
         this.orphanedShots.splice(i, 1);
       }
@@ -757,7 +757,7 @@ export default class GameScene extends Phaser.Scene {
     this.enemies.push(enemy);
 
     // Announce it
-    const label = this.add.text(this.scale.width / 2, this.scale.height / 2,
+    const label = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2,
       '*** ULTIMATE BOSS INCOMING ***', {
         fontSize: '26px',
         fill: '#ff00ff',
@@ -768,7 +768,7 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: label,
       alpha: 0,
-      y: this.scale.height / 2 - 80,
+      y: GAME_CONFIG.height / 2 - 80,
       duration: 2500,
       onComplete: () => label.destroy(),
     });

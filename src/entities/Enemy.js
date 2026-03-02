@@ -466,7 +466,7 @@ export default class Enemy {
       }
 
       // Off-screen cleanup
-      if (p.x < -50 || p.x > this.scene.scale.width + 50 || p.y < -50 || p.y > this.scene.scale.height + 50) {
+      if (p.x < -50 || p.x > 850 || p.y < -50 || p.y > 650) {
         p.dead = true;
       }
     }

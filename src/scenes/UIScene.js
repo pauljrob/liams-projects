@@ -68,9 +68,9 @@ export default class UIScene extends Phaser.Scene {
     const PAD = 6;
     const BTN_H = 29;
     const ROW_GAP = 4;
-    const W = this.scale.width;
+    const W = GAME_CONFIG.width;
     const SAFE_BOTTOM = 20; // extra padding for iPhone home indicator / safe area
-    const row2Y = this.scale.height - 4 - SAFE_BOTTOM;     // bottom row (originY=1)
+    const row2Y = GAME_CONFIG.height - 4 - SAFE_BOTTOM;     // bottom row (originY=1)
     const row1Y = row2Y - BTN_H - ROW_GAP;    // top row (originY=1)
 
     const charW = 8;
@@ -150,7 +150,7 @@ export default class UIScene extends Phaser.Scene {
     this.gameScene.selectTurretType(type);
 
     if (!this.hintText) {
-      this.hintText = this.add.text(this.scale.width / 2, this.scale.height - 95,
+      this.hintText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 95,
         'Click to place  |  ESC or right-click to cancel', {
           fontSize: '11px',
           fill: '#aaaaaa',
@@ -177,7 +177,7 @@ export default class UIScene extends Phaser.Scene {
       '——————————',
       '??? — click to enter',
     ];
-    const panel = this.add.text(this.scale.width - 10, 10, lines.join('\n'), {
+    const panel = this.add.text(GAME_CONFIG.width - 10, 10, lines.join('\n'), {
       fontSize: '12px',
       fill: '#aaaaaa',
       fontFamily: 'monospace',
@@ -196,8 +196,8 @@ export default class UIScene extends Phaser.Scene {
   openCodeInput() {
     if (this.codeInput) return;
 
-    const W = this.scale.width;
-    const H = this.scale.height;
+    const W = GAME_CONFIG.width;
+    const H = GAME_CONFIG.height;
     const elements = [];
 
     // Dim background — full screen
@@ -343,7 +343,7 @@ export default class UIScene extends Phaser.Scene {
   }
 
   createSkipWaveButton() {
-    this.stopWaveBtn = this.add.text(this.scale.width / 2 - 210, 10, '⏹ Stop Wave', {
+    this.stopWaveBtn = this.add.text(GAME_CONFIG.width / 2 - 210, 10, '⏹ Stop Wave', {
       fontSize: '13px',
       fill: '#ff6666',
       fontFamily: 'monospace',
@@ -369,7 +369,7 @@ export default class UIScene extends Phaser.Scene {
         this.stopWaveBtn.setStyle({ fill: col });
       });
 
-    this.skipWaveBtn = this.add.text(this.scale.width / 2 - 70, 10, '⏭ Skip Wave', {
+    this.skipWaveBtn = this.add.text(GAME_CONFIG.width / 2 - 70, 10, '⏭ Skip Wave', {
       fontSize: '13px',
       fill: '#ffdd00',
       fontFamily: 'monospace',
@@ -386,7 +386,7 @@ export default class UIScene extends Phaser.Scene {
     this.autoClickerOn = false;
     this.autoClickerInterval = null;
 
-    this.autoClickerBtn = this.add.text(this.scale.width / 2 + 70, 10, '🤖 Auto: OFF', {
+    this.autoClickerBtn = this.add.text(GAME_CONFIG.width / 2 + 70, 10, '🤖 Auto: OFF', {
       fontSize: '13px',
       fill: '#aaaaaa',
       fontFamily: 'monospace',
@@ -400,7 +400,7 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerout', () => this.autoClickerBtn.setStyle({ fill: this.autoClickerOn ? '#00ff88' : '#aaaaaa' }));
 
     // Add Credits button — hidden until secret code unlocked
-    this.addCreditsBtn = this.add.text(this.scale.width / 2 + 180, 10, '+1000 Credits', {
+    this.addCreditsBtn = this.add.text(GAME_CONFIG.width / 2 + 180, 10, '+1000 Credits', {
       fontSize: '13px',
       fill: '#ffdd00',
       fontFamily: 'monospace',
@@ -414,7 +414,7 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerout', () => this.addCreditsBtn.setStyle({ fill: '#ffdd00' }));
 
     // Ultimate Boss spawn button — hidden until secret code unlocked
-    this.ultimateBossBtn = this.add.text(this.scale.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
+    this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
       fill: '#ff00ff',
       fontFamily: 'monospace',
@@ -472,7 +472,7 @@ export default class UIScene extends Phaser.Scene {
           uhBtn.setText('ULTRA\nHAMSTER\n(FREE)');
         }
         this.showCheatExtras();
-        const flash = this.add.text(this.scale.width / 2, this.scale.height / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
+        const flash = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
           fontSize: '22px',
           fill: '#ffdd00',
           fontFamily: 'monospace',
@@ -482,7 +482,7 @@ export default class UIScene extends Phaser.Scene {
         this.tweens.add({
           targets: flash,
           alpha: 0,
-          y: this.scale.height / 2 - 60,
+          y: GAME_CONFIG.height / 2 - 60,
           duration: 2000,
           onComplete: () => flash.destroy(),
         });
@@ -516,7 +516,7 @@ export default class UIScene extends Phaser.Scene {
     let px = turret.x - panelW / 2;
     let py = turret.y - panelH - 30;
     if (py < 5) py = turret.y + 30;
-    px = Math.max(5, Math.min(px, this.scale.width - panelW - 5));
+    px = Math.max(5, Math.min(px, GAME_CONFIG.width - panelW - 5));
 
     const items = [];
 
