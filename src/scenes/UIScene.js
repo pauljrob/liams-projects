@@ -475,6 +475,7 @@ export default class UIScene extends Phaser.Scene {
       this.konamiBuffer = (this.konamiBuffer + event.key.toLowerCase()).slice(-SECRET.length);
       if (this.konamiBuffer === SECRET && !this.ultraUnlocked) {
         this.ultraUnlocked = true;
+        this.gameScene.cheatMode = true;
         GAME_CONFIG.turretCosts.ultraHamster = 0;
         const uhBtn = this.buttons.find(b => b.turretType === 'ultraHamster');
         if (uhBtn) {
@@ -482,7 +483,9 @@ export default class UIScene extends Phaser.Scene {
           uhBtn.setText('ULTRA\nHAMSTER\n(FREE)');
         }
         this.showCheatExtras();
-        const flash = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
+        const W = GAME_CONFIG.width;
+        const H = GAME_CONFIG.height;
+        const flash = this.add.text(W / 2, H / 2, '👑 ULTRA HAMSTER UNLOCKED 👑', {
           fontSize: '22px',
           fill: '#ffdd00',
           fontFamily: 'monospace',
@@ -492,9 +495,18 @@ export default class UIScene extends Phaser.Scene {
         this.tweens.add({
           targets: flash,
           alpha: 0,
-          y: GAME_CONFIG.height / 2 - 60,
+          y: H / 2 - 60,
           duration: 2000,
           onComplete: () => flash.destroy(),
+        });
+        // Leaderboard warning
+        const lbWarn = this.add.text(W / 2, H / 2 + 36, 'Score will not be saved to leaderboard', {
+          fontSize: '13px', fill: '#ff8844', fontFamily: 'monospace',
+          stroke: '#000000', strokeThickness: 3,
+        }).setOrigin(0.5).setDepth(200);
+        this.tweens.add({
+          targets: lbWarn, alpha: 0, y: H / 2 - 20, duration: 3000, delay: 1000,
+          onComplete: () => lbWarn.destroy(),
         });
       }
     };
