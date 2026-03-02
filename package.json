@@ -2,6 +2,7 @@
   "name": "space-tower-defense",
   "private": true,
   "dependencies": {
+    "@vercel/analytics": "^1.6.1",
     "ioredis": "^5.4.1"
   }
 }
