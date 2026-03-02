@@ -32,16 +32,6 @@ export const TURRET_DEFS = {
     projectileSize: 6,
     splash: 60,
   },
-  adminMissile: {
-    color: 0xff00ff,
-    range: 320,
-    damage: 500,
-    fireRate: 100,
-    projectileSpeed: 600,
-    projectileColor: 0xff00ff,
-    projectileSize: 6,
-    splash: 60,
-  },
   forceField: {
     color: 0xaa00ff,
     range: 240,
@@ -104,7 +94,6 @@ export const UPGRADE_DEFS = {
     { label: 'Burn DPS', key: 'burnDamage', costs: [100, 200, 400], values: [7, 12, 20] },
     { label: 'Range',    key: 'range',      costs: [100, 200, 400], values: [480, 560, 650] },
   ],
-  adminMissile: [],
 };
 
 export default class Turret {

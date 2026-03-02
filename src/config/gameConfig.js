@@ -25,7 +25,6 @@ export const GAME_CONFIG = {
     attackPlane: 150,
     plasmaGun: 125,
     plasmaRailgun: 300,
-    adminMissile: 100,
   },
 };
 
