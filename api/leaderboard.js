@@ -127,10 +127,9 @@ async function handlePost(req, res) {
   // Generate unique entry ID
   const id = `entry:${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
 
-  // Composite score: wave primary, kills secondary, faster time tertiary
-  const clampedKills = Math.max(0, Math.min(kills, 99_999));
+  // Composite score: wave primary, time survived secondary
   const clampedTimeSec = Math.max(0, Math.min(Math.floor(timeSurvivedMs / 1000), 999_999));
-  const compositeScore = wave * 100_000_000_000 + clampedKills * 1_000_000 + (999_999 - clampedTimeSec);
+  const compositeScore = wave * 1_000_000 + clampedTimeSec;
 
   // Store entry in sorted set + hash
   const pipeline = kv.pipeline();
