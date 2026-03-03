@@ -20,7 +20,7 @@ const MAX_ENTRIES = 100;
 const headers = {
   'Content-Type': 'application/json',
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Methods': 'GET, POST, DELETE, OPTIONS',
+  'Access-Control-Allow-Methods': 'GET, POST, DELETE, PATCH, OPTIONS',
   'Access-Control-Allow-Headers': 'Content-Type, Authorization',
 };
 
@@ -44,6 +44,9 @@ export default async function handler(req, res) {
     }
     if (req.method === 'DELETE') {
       return await handleDelete(req, res);
+    }
+    if (req.method === 'PATCH') {
+      return await handleRecalculate(req, res);
     }
     return res.status(405).json({ error: 'Method not allowed' });
   } catch (err) {
@@ -198,4 +201,49 @@ async function handleDelete(req, res) {
   }
 
   return res.status(200).json({ success: true, removedId: entryId });
+}
+
+async function handleRecalculate(req, res) {
+  // Verify admin password
+  const authHeader = req.headers['authorization'] || '';
+  const password = authHeader.replace(/^Bearer\s+/i, '');
+  const adminPassword = process.env.ADMIN_PASSWORD;
+
+  if (!adminPassword || password !== adminPassword) {
+    return res.status(401).json({ error: 'Unauthorized' });
+  }
+
+  const kv = getRedis();
+
+  // Get all entry IDs
+  const entryIds = await kv.zrange(LEADERBOARD_KEY, 0, -1);
+  if (!entryIds || entryIds.length === 0) {
+    return res.status(200).json({ message: 'No entries to recalculate', updated: 0 });
+  }
+
+  // Fetch metadata for each entry
+  const fetchPipeline = kv.pipeline();
+  for (const id of entryIds) {
+    fetchPipeline.hgetall(id);
+  }
+  const results = await fetchPipeline.exec();
+
+  // Recalculate composite scores with new formula
+  const updatePipeline = kv.pipeline();
+  let updated = 0;
+  for (let i = 0; i < entryIds.length; i++) {
+    const [err, data] = results[i];
+    if (err || !data || !data.wave) continue;
+
+    const wave = parseInt(data.wave, 10);
+    const timeSurvivedMs = parseInt(data.timeSurvivedMs || '0', 10);
+    const clampedTimeSec = Math.max(0, Math.min(Math.floor(timeSurvivedMs / 1000), 999_999));
+    const newScore = wave * 1_000_000 + clampedTimeSec;
+
+    updatePipeline.zadd(LEADERBOARD_KEY, newScore, entryIds[i]);
+    updated++;
+  }
+  await updatePipeline.exec();
+
+  return res.status(200).json({ message: 'Scores recalculated', updated });
 }
