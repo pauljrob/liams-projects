@@ -269,6 +269,7 @@ export default class GameScene extends Phaser.Scene {
     if (this.placementPreview) {
       this.placementPreview.clear();
     }
+    this.events.emit('placementCancelled');
   }
 
   updatePreview(x, y) {
@@ -357,8 +358,11 @@ export default class GameScene extends Phaser.Scene {
     }
     playTurretPlace();
 
-    // Cancel placement mode after placing
-    this.cancelPlacement();
+    // Stay in placement mode — player can keep placing the same turret type
+    // Cancel automatically if they can no longer afford it
+    if (this.credits < cost) {
+      this.cancelPlacement();
+    }
   }
 
   randomSpawnInterval() {

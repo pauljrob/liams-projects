@@ -138,9 +138,23 @@ export default class UIScene extends Phaser.Scene {
     this.input.on('pointerdown', (pointer) => {
       if (pointer.rightButtonDown()) this.cancelTurret();
     });
+
+    // Listen for auto-cancel from GameScene (e.g. can't afford turret)
+    this.gameScene.events.on('placementCancelled', () => {
+      if (this.activeBtn) {
+        this.activeBtn.setStyle({ fill: '#00ffcc', backgroundColor: '#003333' });
+        this.activeBtn = null;
+      }
+      if (this.hintText) this.hintText.setVisible(false);
+    });
   }
 
   selectTurret(type, btn) {
+    // Toggle off if clicking the same button
+    if (this.activeBtn === btn) {
+      this.cancelTurret();
+      return;
+    }
     // Deselect previous button
     if (this.activeBtn) {
       this.activeBtn.setStyle({ fill: '#00ffcc', backgroundColor: '#003333' });
@@ -151,7 +165,7 @@ export default class UIScene extends Phaser.Scene {
 
     if (!this.hintText) {
       this.hintText = this.add.text(GAME_CONFIG.width / 2, GAME_CONFIG.height - 95,
-        'Click to place  |  ESC or right-click to cancel', {
+        'Click to place  |  ESC / right-click / re-tap to cancel', {
           fontSize: '11px',
           fill: '#aaaaaa',
           fontFamily: 'monospace',
