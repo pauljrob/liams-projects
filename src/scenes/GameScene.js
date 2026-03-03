@@ -877,12 +877,13 @@ export default class GameScene extends Phaser.Scene {
   // ── Random Events ──────────────────────────────────────────────
 
   triggerRandomEvent() {
-    const events = ['meteorStorm', 'ionPulse', 'solarFlare'];
+    const events = ['meteorStorm', 'ionPulse', 'solarFlare', 'bombRain'];
     const pick = events[Phaser.Math.Between(0, events.length - 1)];
     switch (pick) {
       case 'meteorStorm': this.triggerMeteorStorm(); break;
       case 'ionPulse':    this.triggerIonPulse();    break;
       case 'solarFlare':  this.triggerSolarFlare();  break;
+      case 'bombRain':    this.triggerBombRain();     break;
     }
   }
 
@@ -987,6 +988,91 @@ export default class GameScene extends Phaser.Scene {
       // Deal 50% of max HP
       const dmg = Math.ceil(target.maxHp * 0.5);
       target.takeDamage(dmg);
+    });
+  }
+
+  triggerBombRain() {
+    const BOMB_DAMAGE = 150;
+    const BOMB_RADIUS = 80;
+
+    this.showEventAnnouncement('BOMB RAIN! (60s)', '#ff4400', () => {
+      // Drop a bomb every 2 seconds for 1 minute
+      this.time.addEvent({
+        delay: 2000,
+        repeat: 29,
+        callback: () => {
+          // 50% chance to land on the track, 50% random on screen
+          const onTrack = Math.random() < 0.5;
+          let bx, by;
+
+          if (onTrack) {
+            // Pick a random point along the enemy path
+            const t = Math.random();
+            const pt = this.enemyPath.getPoint(t);
+            bx = pt.x + Phaser.Math.Between(-20, 20);
+            by = pt.y + Phaser.Math.Between(-20, 20);
+          } else {
+            // Random position on screen (miss)
+            bx = Phaser.Math.Between(50, GAME_CONFIG.width - 50);
+            by = Phaser.Math.Between(50, GAME_CONFIG.height - 50);
+          }
+
+          // Bomb falling animation
+          const bomb = this.add.circle(bx, -20, 8, 0xff2200).setDepth(260).setAlpha(0.9);
+          const shadow = this.add.circle(bx, by, 6, 0x000000).setDepth(259).setAlpha(0.3);
+
+          this.tweens.add({
+            targets: bomb,
+            y: by,
+            duration: 500,
+            ease: 'Quad.easeIn',
+            onComplete: () => {
+              bomb.destroy();
+              shadow.destroy();
+
+              // Explosion visual — shockwave ring
+              const ring = this.add.graphics();
+              ring.lineStyle(4, 0xff6600, 1);
+              ring.strokeCircle(bx, by, 10);
+              this.tweens.add({
+                targets: ring,
+                scaleX: BOMB_RADIUS / 10,
+                scaleY: BOMB_RADIUS / 10,
+                alpha: 0,
+                duration: 400,
+                onComplete: () => ring.destroy(),
+              });
+
+              // Fireball
+              const g = this.add.graphics();
+              g.fillStyle(0xff6600, 0.9);
+              g.fillCircle(bx, by, 40);
+              g.fillStyle(0xffcc00, 0.8);
+              g.fillCircle(bx, by, 22);
+              g.fillStyle(0xffffff, 0.6);
+              g.fillCircle(bx, by, 10);
+              this.tweens.add({
+                targets: g,
+                alpha: 0,
+                scaleX: 2.5,
+                scaleY: 2.5,
+                duration: 500,
+                onComplete: () => g.destroy(),
+              });
+
+              // Damage enemies in radius
+              for (const enemy of [...this.enemies]) {
+                if (enemy.dead) continue;
+                const dx = enemy.x - bx;
+                const dy = enemy.y - by;
+                if (Math.sqrt(dx * dx + dy * dy) <= BOMB_RADIUS) {
+                  enemy.takeDamage(BOMB_DAMAGE);
+                }
+              }
+            },
+          });
+        },
+      });
     });
   }
 }

@@ -515,6 +515,7 @@ export default class UIScene extends Phaser.Scene {
       { name: 'Meteor Storm', desc: 'Rains damage on enemies for 60s', color: '#ffaa00', trigger: 'triggerMeteorStorm' },
       { name: 'Ion Pulse', desc: 'Slows all enemies 50% for 60s', color: '#00ccff', trigger: 'triggerIonPulse' },
       { name: 'Solar Flare', desc: 'Heavy damage to 1 enemy (50% HP)', color: '#ffff44', trigger: 'triggerSolarFlare' },
+      { name: 'Bomb Rain', desc: 'Bombs on track for 60s (50% hit)', color: '#ff4400', trigger: 'triggerBombRain' },
     ];
 
     events.forEach((evt, i) => {
