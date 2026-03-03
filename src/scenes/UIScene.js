@@ -437,6 +437,23 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerover', () => this.addCreditsBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.addCreditsBtn.setStyle({ fill: '#ffdd00' }));
 
+    // Events list button — hidden until secret code unlocked
+    this.eventsBtn = this.add.text(GAME_CONFIG.width - 10, 10, 'Events', {
+      fontSize: '13px',
+      fill: '#00ccff',
+      fontFamily: 'monospace',
+      backgroundColor: '#002233',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true }).setVisible(false);
+
+    this.eventsListOpen = false;
+    this.eventsListItems = [];
+
+    this.eventsBtn
+      .on('pointerdown', () => this.toggleEventsList())
+      .on('pointerover', () => this.eventsBtn.setStyle({ fill: '#ffffff' }))
+      .on('pointerout', () => this.eventsBtn.setStyle({ fill: '#00ccff' }));
+
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
@@ -479,6 +496,47 @@ export default class UIScene extends Phaser.Scene {
     this.autoClickerBtn.setVisible(true);
     this.ultimateBossBtn.setVisible(true);
     this.addCreditsBtn.setVisible(true);
+    this.eventsBtn.setVisible(true);
+  }
+
+  toggleEventsList() {
+    if (this.eventsListOpen) {
+      // Close the list
+      this.eventsListItems.forEach(item => item.destroy());
+      this.eventsListItems = [];
+      this.eventsListOpen = false;
+      return;
+    }
+
+    this.eventsListOpen = true;
+    const x = GAME_CONFIG.width - 10;
+    const startY = 38;
+    const events = [
+      { name: 'Meteor Storm', desc: 'Damages all enemies (25% HP)', color: '#ffaa00' },
+      { name: 'Ion Pulse', desc: 'Slows all enemies 50% for 5s', color: '#00ccff' },
+      { name: 'Solar Flare', desc: 'Heavy damage to 1 enemy (50% HP)', color: '#ffff44' },
+    ];
+
+    events.forEach((evt, i) => {
+      const y = startY + i * 36;
+      const title = this.add.text(x, y, evt.name, {
+        fontSize: '12px',
+        fill: evt.color,
+        fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(1, 0).setDepth(400);
+
+      const desc = this.add.text(x, y + 15, evt.desc, {
+        fontSize: '10px',
+        fill: '#aaaaaa',
+        fontFamily: 'monospace',
+        stroke: '#000000',
+        strokeThickness: 2,
+      }).setOrigin(1, 0).setDepth(400);
+
+      this.eventsListItems.push(title, desc);
+    });
   }
 
   setupSecretCode() {
