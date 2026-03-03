@@ -957,10 +957,15 @@ export default class GameScene extends Phaser.Scene {
         onComplete: () => flash.destroy(),
       });
 
-      // Slow all enemies for 60 seconds
+      // Slow all enemies for 60 seconds (stacks — each click adds 60s)
       this.ionPulseActive = true;
+      this.ionPulseStacks = (this.ionPulseStacks || 0) + 1;
       this.time.delayedCall(60000, () => {
-        this.ionPulseActive = false;
+        this.ionPulseStacks--;
+        if (this.ionPulseStacks <= 0) {
+          this.ionPulseActive = false;
+          this.ionPulseStacks = 0;
+        }
       });
     });
   }
@@ -1001,21 +1006,11 @@ export default class GameScene extends Phaser.Scene {
         delay: 2000,
         repeat: 29,
         callback: () => {
-          // 50% chance to land on the track, 50% random on screen
-          const onTrack = Math.random() < 0.5;
-          let bx, by;
-
-          if (onTrack) {
-            // Pick a random point along the enemy path
-            const t = Math.random();
-            const pt = this.enemyPath.getPoint(t);
-            bx = pt.x + Phaser.Math.Between(-20, 20);
-            by = pt.y + Phaser.Math.Between(-20, 20);
-          } else {
-            // Random position on screen (miss)
-            bx = Phaser.Math.Between(50, GAME_CONFIG.width - 50);
-            by = Phaser.Math.Between(50, GAME_CONFIG.height - 50);
-          }
+          // Always land on the track
+          const t = Math.random();
+          const pt = this.enemyPath.getPoint(t);
+          const bx = pt.x + Phaser.Math.Between(-20, 20);
+          const by = pt.y + Phaser.Math.Between(-20, 20);
 
           // Bomb falling animation
           const bomb = this.add.circle(bx, -20, 8, 0xff2200).setDepth(260).setAlpha(0.9);
