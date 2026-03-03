@@ -142,7 +142,7 @@ space-tower-defense/
 - **All commits must include:** `Co-Authored-By: Liam Roberts <liamroberts@users.noreply.github.com>`
 - Branch: `main`
 - **Hosting:** Vercel auto-deploys on every push to `main`
-- **Live URL:** `https://liams-projects.vercel.app`
+- **Live URL:** `https://Liamsworld.dev`
 - **Testing on iPhone:** Push to GitHub → Vercel deploys automatically → open live URL on iPhone Safari
 
 ### Feature Development Workflow
