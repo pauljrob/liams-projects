@@ -41,6 +41,11 @@ export default class GameScene extends Phaser.Scene {
     this.totalCreditsEarned = 0;
     this.gameStartTime = Date.now();
 
+    // Random events
+    this.eventTimer = 0;
+    this.eventInterval = Phaser.Math.Between(60000, 300000); // 1-5 minutes
+    this.ionPulseActive = false;
+
     this.selectedTurretType = null;
     this.placementPreview = null;
 
@@ -593,6 +598,8 @@ export default class GameScene extends Phaser.Scene {
     for (const enemy of [...this.enemies]) {
       if (enemy.dead || enemy.reachedBase) continue;
       enemy.update(delta, this.turrets, this.baseX, this.baseY);
+      // Apply ion pulse slow after normal update (slowMultiplier resets each frame)
+      if (this.ionPulseActive) enemy.slowMultiplier = 0.5;
     }
     // Remove dead/arrived enemies after all updates
     for (let i = this.enemies.length - 1; i >= 0; i--) {
@@ -682,6 +689,16 @@ export default class GameScene extends Phaser.Scene {
       if (hit || p.x < -50 || p.x > GAME_CONFIG.width + 50 || p.y < -50 || p.y > GAME_CONFIG.height + 50) {
         p.graphic.destroy();
         this.orphanedShots.splice(i, 1);
+      }
+    }
+
+    // Random event timer
+    if (this.waveActive && this.enemies.length > 0) {
+      this.eventTimer += delta;
+      if (this.eventTimer >= this.eventInterval) {
+        this.triggerRandomEvent();
+        this.eventTimer = 0;
+        this.eventInterval = Phaser.Math.Between(60000, 300000);
       }
     }
 
@@ -855,5 +872,114 @@ export default class GameScene extends Phaser.Scene {
 
     this.waveActive = true;
     this.spawnTimer = 0;
+  }
+
+  // ── Random Events ──────────────────────────────────────────────
+
+  triggerRandomEvent() {
+    const events = ['meteorStorm', 'ionPulse', 'solarFlare'];
+    const pick = events[Phaser.Math.Between(0, events.length - 1)];
+    switch (pick) {
+      case 'meteorStorm': this.triggerMeteorStorm(); break;
+      case 'ionPulse':    this.triggerIonPulse();    break;
+      case 'solarFlare':  this.triggerSolarFlare();  break;
+    }
+  }
+
+  showEventAnnouncement(text, color, onComplete) {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const announce = this.add.text(W / 2, H / 2, text, {
+      fontSize: '26px',
+      fill: color,
+      fontFamily: 'monospace',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(300).setAlpha(0);
+
+    this.tweens.add({
+      targets: announce, alpha: 1, duration: 300, yoyo: true, hold: 1200,
+      onComplete: () => {
+        announce.destroy();
+        if (onComplete) onComplete();
+      },
+    });
+  }
+
+  triggerMeteorStorm() {
+    this.showEventAnnouncement('METEOR STORM!', '#ffaa00', () => {
+      const W = this.scale.width;
+      const H = this.scale.height;
+
+      // Spawn meteor particles
+      for (let i = 0; i < 20; i++) {
+        const x = Phaser.Math.Between(0, W);
+        const meteor = this.add.circle(x, -10, Phaser.Math.Between(3, 7), 0xff8800)
+          .setDepth(250).setAlpha(0.9);
+        this.tweens.add({
+          targets: meteor,
+          x: x + Phaser.Math.Between(-80, 80),
+          y: H + 20,
+          alpha: 0,
+          duration: Phaser.Math.Between(600, 1200),
+          delay: Phaser.Math.Between(0, 500),
+          onComplete: () => meteor.destroy(),
+        });
+      }
+
+      // Damage all enemies 25% of max HP
+      for (const enemy of [...this.enemies]) {
+        if (enemy.dead) continue;
+        const dmg = Math.ceil(enemy.maxHp * 0.25);
+        enemy.takeDamage(dmg);
+      }
+    });
+  }
+
+  triggerIonPulse() {
+    this.showEventAnnouncement('ION PULSE!', '#00ccff', () => {
+      const W = this.scale.width;
+      const H = this.scale.height;
+
+      // Blue flash effect
+      const flash = this.add.rectangle(W / 2, H / 2, W, H, 0x00ccff)
+        .setDepth(250).setAlpha(0.3);
+      this.tweens.add({
+        targets: flash, alpha: 0, duration: 800,
+        onComplete: () => flash.destroy(),
+      });
+
+      // Slow all enemies for 5 seconds
+      this.ionPulseActive = true;
+      this.time.delayedCall(5000, () => {
+        this.ionPulseActive = false;
+      });
+    });
+  }
+
+  triggerSolarFlare() {
+    // Pick a random living enemy
+    const alive = this.enemies.filter(e => !e.dead);
+    if (alive.length === 0) return;
+    const target = alive[Phaser.Math.Between(0, alive.length - 1)];
+
+    this.showEventAnnouncement('SOLAR FLARE!', '#ffff44', () => {
+      if (target.dead) return;
+
+      // Bright beam from top of screen to the enemy
+      const beam = this.add.rectangle(target.x, target.y / 2, 6, target.y, 0xffff88)
+        .setDepth(250).setAlpha(0.9);
+      const glow = this.add.circle(target.x, target.y, 30, 0xffff44)
+        .setDepth(250).setAlpha(0.7);
+
+      this.tweens.add({
+        targets: [beam, glow], alpha: 0, duration: 600,
+        onComplete: () => { beam.destroy(); glow.destroy(); },
+      });
+
+      // Deal 50% of max HP
+      const dmg = Math.ceil(target.maxHp * 0.5);
+      target.takeDamage(dmg);
+    });
   }
 }
