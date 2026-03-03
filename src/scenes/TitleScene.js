@@ -120,7 +120,7 @@ export default class TitleScene extends Phaser.Scene {
     });
 
     // Version / credits line
-    this.add.text(W / 2, H - 18, 'v0.1  •  Built with Phaser 3', {
+    this.add.text(W / 2, H - 18, 'v0.5  •  Built with Phaser 3', {
       fontSize: '11px',
       fill: '#445566',
       fontFamily: 'monospace',
