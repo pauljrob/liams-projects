@@ -512,10 +512,10 @@ export default class UIScene extends Phaser.Scene {
     const x = GAME_CONFIG.width - 10;
     const startY = 38;
     const events = [
-      { name: 'Meteor Storm', desc: 'Rains damage on enemies for 60s', color: '#ffaa00', trigger: 'triggerMeteorStorm' },
-      { name: 'Ion Pulse', desc: 'Slows all enemies 50% for 60s', color: '#00ccff', trigger: 'triggerIonPulse' },
-      { name: 'Solar Flare', desc: 'Heavy damage to 1 enemy (50% HP)', color: '#ffff44', trigger: 'triggerSolarFlare' },
-      { name: 'Bomb Rain', desc: 'Bombs on track for 60s (stackable)', color: '#ff4400', trigger: 'triggerBombRain' },
+      { name: 'Meteor Storm', desc: '60s damage rain (stackable)', color: '#ffaa00', trigger: 'triggerMeteorStorm' },
+      { name: 'Ion Pulse', desc: '60s slow 50% (stackable)', color: '#00ccff', trigger: 'triggerIonPulse' },
+      { name: 'Solar Flare', desc: '50% HP to 1 enemy (stackable)', color: '#ffff44', trigger: 'triggerSolarFlare' },
+      { name: 'Bomb Rain', desc: '60s bombs on track (stay till hit)', color: '#ff4400', trigger: 'triggerBombRain' },
     ];
 
     events.forEach((evt, i) => {
