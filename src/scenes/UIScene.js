@@ -512,9 +512,9 @@ export default class UIScene extends Phaser.Scene {
     const x = GAME_CONFIG.width - 10;
     const startY = 38;
     const events = [
-      { name: 'Meteor Storm', desc: 'Damages all enemies (25% HP)', color: '#ffaa00' },
-      { name: 'Ion Pulse', desc: 'Slows all enemies 50% for 5s', color: '#00ccff' },
-      { name: 'Solar Flare', desc: 'Heavy damage to 1 enemy (50% HP)', color: '#ffff44' },
+      { name: 'Meteor Storm', desc: 'Damages all enemies (25% HP)', color: '#ffaa00', trigger: 'triggerMeteorStorm' },
+      { name: 'Ion Pulse', desc: 'Slows all enemies 50% for 5s', color: '#00ccff', trigger: 'triggerIonPulse' },
+      { name: 'Solar Flare', desc: 'Heavy damage to 1 enemy (50% HP)', color: '#ffff44', trigger: 'triggerSolarFlare' },
     ];
 
     events.forEach((evt, i) => {
@@ -523,11 +523,19 @@ export default class UIScene extends Phaser.Scene {
         fontSize: '12px',
         fill: evt.color,
         fontFamily: 'monospace',
+        backgroundColor: '#111111',
+        padding: { x: 4, y: 2 },
         stroke: '#000000',
         strokeThickness: 2,
-      }).setOrigin(1, 0).setDepth(400);
+      }).setOrigin(1, 0).setDepth(400).setInteractive({ useHandCursor: true });
 
-      const desc = this.add.text(x, y + 15, evt.desc, {
+      title.on('pointerdown', () => {
+        if (this.gameScene[evt.trigger]) this.gameScene[evt.trigger]();
+      });
+      title.on('pointerover', () => title.setStyle({ fill: '#ffffff' }));
+      title.on('pointerout', () => title.setStyle({ fill: evt.color }));
+
+      const desc = this.add.text(x, y + 17, evt.desc, {
         fontSize: '10px',
         fill: '#aaaaaa',
         fontFamily: 'monospace',
