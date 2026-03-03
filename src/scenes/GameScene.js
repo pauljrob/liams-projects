@@ -907,37 +907,44 @@ export default class GameScene extends Phaser.Scene {
   }
 
   triggerMeteorStorm() {
-    this.showEventAnnouncement('METEOR STORM!', '#ffaa00', () => {
+    this.showEventAnnouncement('METEOR STORM! (60s)', '#ffaa00', () => {
       const W = this.scale.width;
       const H = this.scale.height;
 
-      // Spawn meteor particles
-      for (let i = 0; i < 20; i++) {
-        const x = Phaser.Math.Between(0, W);
-        const meteor = this.add.circle(x, -10, Phaser.Math.Between(3, 7), 0xff8800)
-          .setDepth(250).setAlpha(0.9);
-        this.tweens.add({
-          targets: meteor,
-          x: x + Phaser.Math.Between(-80, 80),
-          y: H + 20,
-          alpha: 0,
-          duration: Phaser.Math.Between(600, 1200),
-          delay: Phaser.Math.Between(0, 500),
-          onComplete: () => meteor.destroy(),
-        });
-      }
+      // Rain meteors every 2 seconds for 1 minute
+      const meteorEvent = this.time.addEvent({
+        delay: 2000,
+        repeat: 29, // 30 waves total over 60 seconds
+        callback: () => {
+          // Spawn meteor particles
+          for (let i = 0; i < 8; i++) {
+            const x = Phaser.Math.Between(0, W);
+            const meteor = this.add.circle(x, -10, Phaser.Math.Between(3, 7), 0xff8800)
+              .setDepth(250).setAlpha(0.9);
+            this.tweens.add({
+              targets: meteor,
+              x: x + Phaser.Math.Between(-80, 80),
+              y: H + 20,
+              alpha: 0,
+              duration: Phaser.Math.Between(600, 1200),
+              delay: Phaser.Math.Between(0, 300),
+              onComplete: () => meteor.destroy(),
+            });
+          }
 
-      // Damage all enemies 25% of max HP
-      for (const enemy of [...this.enemies]) {
-        if (enemy.dead) continue;
-        const dmg = Math.ceil(enemy.maxHp * 0.25);
-        enemy.takeDamage(dmg);
-      }
+          // Damage all enemies 10% of max HP each wave
+          for (const enemy of [...this.enemies]) {
+            if (enemy.dead) continue;
+            const dmg = Math.ceil(enemy.maxHp * 0.10);
+            enemy.takeDamage(dmg);
+          }
+        },
+      });
     });
   }
 
   triggerIonPulse() {
-    this.showEventAnnouncement('ION PULSE!', '#00ccff', () => {
+    this.showEventAnnouncement('ION PULSE! (60s)', '#00ccff', () => {
       const W = this.scale.width;
       const H = this.scale.height;
 
@@ -949,9 +956,9 @@ export default class GameScene extends Phaser.Scene {
         onComplete: () => flash.destroy(),
       });
 
-      // Slow all enemies for 5 seconds
+      // Slow all enemies for 60 seconds
       this.ionPulseActive = true;
-      this.time.delayedCall(5000, () => {
+      this.time.delayedCall(60000, () => {
         this.ionPulseActive = false;
       });
     });
