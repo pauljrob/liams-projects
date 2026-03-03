@@ -155,7 +155,7 @@ When adding a new feature:
 ### Leaderboard & Admin
 - **Backend:** Vercel serverless function (`api/leaderboard.js`) with Redis (ioredis)
 - **Storage:** Redis sorted set (`leaderboard`) for ranking + Redis hashes for entry metadata
-- **Composite score:** `wave * 100_000_000_000 + kills * 1_000_000 + (999_999 - timeSec)` — wave primary, kills secondary, faster time tertiary
+- **Composite score:** `wave * 1_000_000 + timeSec` — wave primary, longer survival time secondary
 - **Entry IDs:** `entry:<timestamp>-<random>` (e.g., `entry:1709312345678-a1b2c3d4`)
 - **Admin auth:** `Authorization: Bearer <password>` header, validated against `ADMIN_PASSWORD` env var
 - **Env vars on Vercel:** `REDIS_URL`, `ADMIN_PASSWORD` (must have Preview checkbox enabled for preview deploys)
