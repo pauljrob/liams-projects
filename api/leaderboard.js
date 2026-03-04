@@ -114,16 +114,16 @@ async function handlePost(req, res) {
   }
 
   // Validate numbers
-  if (!Number.isInteger(wave) || wave < 1 || wave > 200) {
+  if (!Number.isInteger(wave) || wave < 1 || wave > 999999) {
     return res.status(400).json({ error: 'Invalid wave number' });
   }
-  if (!Number.isInteger(kills) || kills < 0 || kills > 50000) {
+  if (!Number.isInteger(kills) || kills < 0 || kills > 99999999) {
     return res.status(400).json({ error: 'Invalid kills count' });
   }
   if (!Number.isInteger(timeSurvivedMs) || timeSurvivedMs < 0) {
     return res.status(400).json({ error: 'Invalid time' });
   }
-  if (!Number.isInteger(creditsEarned) || creditsEarned < 0) {
+  if (!Number.isInteger(creditsEarned) || creditsEarned < 0 || creditsEarned > 99999999) {
     return res.status(400).json({ error: 'Invalid credits' });
   }
 
