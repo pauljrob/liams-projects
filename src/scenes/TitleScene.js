@@ -73,20 +73,39 @@ export default class TitleScene extends Phaser.Scene {
       align: 'center',
     }).setOrigin(0.5);
 
-    // Tap to start — pulse animation
-    const startText = this.add.text(W / 2, H * 0.73, 'Tap / Click to Start', {
-      fontSize: '22px',
-      fill: '#ffdd44',
+    // Difficulty selection label
+    this.add.text(W / 2, H * 0.67, 'Select Difficulty', {
+      fontSize: '16px',
+      fill: '#aaaaaa',
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    this.tweens.add({
-      targets: startText,
-      alpha: 0.2,
-      duration: 800,
-      yoyo: true,
-      repeat: -1,
-      ease: 'Sine.easeInOut',
+    // Difficulty buttons
+    const difficulties = [
+      { label: 'Easy', color: '#00ff66', bg: '#003311', key: 'easy' },
+      { label: 'Normal', color: '#ffdd44', bg: '#332200', key: 'normal' },
+      { label: 'Hard', color: '#ff4444', bg: '#330000', key: 'hard' },
+    ];
+
+    const btnSpacing = 110;
+    const btnY = H * 0.75;
+    const startX = W / 2 - btnSpacing;
+
+    difficulties.forEach((diff, i) => {
+      const btn = this.add.text(startX + i * btnSpacing, btnY, diff.label, {
+        fontSize: '20px',
+        fill: diff.color,
+        fontFamily: 'monospace',
+        backgroundColor: diff.bg,
+        padding: { x: 14, y: 8 },
+      }).setOrigin(0.5).setInteractive({ useHandCursor: true });
+
+      btn.on('pointerover', () => btn.setStyle({ fill: '#ffffff' }));
+      btn.on('pointerout', () => btn.setStyle({ fill: diff.color }));
+      btn.on('pointerdown', () => {
+        if (this.leaderboardOpen || this.adminOpen) return;
+        this.startGame(diff.key);
+      });
     });
 
     // Leaderboard button
@@ -126,20 +145,13 @@ export default class TitleScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    // Start on click/tap (only when overlays are closed)
-    this.input.on('pointerdown', (pointer) => {
-      if (this.leaderboardOpen || this.adminOpen) return;
-      // Don't start game if clicking button areas
-      const lbBounds = lbBtn.getBounds();
-      if (lbBounds.contains(pointer.x, pointer.y)) return;
-      const adminBounds = adminBtn.getBounds();
-      if (adminBounds.contains(pointer.x, pointer.y)) return;
+  }
 
-      this.input.removeAllListeners('pointerdown');
-      this.cameras.main.fadeOut(300, 0, 0, 16);
-      this.cameras.main.once('camerafadeoutcomplete', () => {
-        this.scene.start('GameScene');
-      });
+  startGame(difficulty) {
+    this.input.removeAllListeners('pointerdown');
+    this.cameras.main.fadeOut(300, 0, 0, 16);
+    this.cameras.main.once('camerafadeoutcomplete', () => {
+      this.scene.start('GameScene', { difficulty });
     });
   }
 

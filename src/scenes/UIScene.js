@@ -13,7 +13,7 @@ export default class UIScene extends Phaser.Scene {
   }
 
   create() {
-    this.creditsText = this.add.text(10, 10, `Credits: ${GAME_CONFIG.startingCredits}`, {
+    this.creditsText = this.add.text(10, 10, `Credits: ${this.gameScene.credits}`, {
       fontSize: '18px',
       fill: '#ffdd00',
       fontFamily: 'monospace',
@@ -25,7 +25,7 @@ export default class UIScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0, 0);
 
-    this.hpText = this.add.text(10, 60, `Base HP: ${GAME_CONFIG.baseHitPoints}`, {
+    this.hpText = this.add.text(10, 60, `Base HP: ${this.gameScene.baseHP}`, {
       fontSize: '18px',
       fill: '#ff4444',
       fontFamily: 'monospace',

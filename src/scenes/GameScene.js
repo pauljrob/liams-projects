@@ -15,11 +15,20 @@ export default class GameScene extends Phaser.Scene {
 
   init(data) {
     this.cheatMode = data && data.cheatMode ? true : false;
+    this.difficulty = (data && data.difficulty) || 'normal';
   }
 
   create() {
-    this.credits = GAME_CONFIG.startingCredits;
-    this.baseHP = GAME_CONFIG.baseHitPoints;
+    // Difficulty modifiers
+    const DIFFICULTY_MODS = {
+      easy:   { credits: 1000, baseHP: 5, hpMul: 0.7, speedMul: 0.85, countMul: 0.7, rewardMul: 1.5 },
+      normal: { credits: 750,  baseHP: 3, hpMul: 1.0, speedMul: 1.0,  countMul: 1.0, rewardMul: 1.0 },
+      hard:   { credits: 500,  baseHP: 2, hpMul: 1.4, speedMul: 1.15, countMul: 1.3, rewardMul: 0.7 },
+    };
+    this.diffMod = DIFFICULTY_MODS[this.difficulty] || DIFFICULTY_MODS.normal;
+
+    this.credits = this.diffMod.credits;
+    this.baseHP = this.diffMod.baseHP;
     this.currentWave = 0;
     this.turrets = [];
     this.bombs = [];
@@ -382,14 +391,15 @@ export default class GameScene extends Phaser.Scene {
     this.showWaveAnnouncement(this.currentWave, isBossWave, () => {
       this.spawnQueue = [];
 
-      const babySpeed = WAVE_CONFIG.babyShipSpeed(this.currentWave);
-      const babyHP = WAVE_CONFIG.babyShipHealth(this.currentWave);
+      const dm = this.diffMod;
+      const babySpeed = WAVE_CONFIG.babyShipSpeed(this.currentWave) * dm.speedMul;
+      const babyHP = Math.ceil(WAVE_CONFIG.babyShipHealth(this.currentWave) * dm.hpMul);
       const motherFireRate = WAVE_CONFIG.mothershipFireRate(this.currentWave);
       const motherFireRange = WAVE_CONFIG.mothershipFireRange;
 
       if (isBossWave) {
         // Boss wave — only the massive boss mothership, no regular enemies
-        const bossHP = WAVE_CONFIG.bossHealth(this.currentWave);
+        const bossHP = Math.ceil(WAVE_CONFIG.bossHealth(this.currentWave) * dm.hpMul);
         this.spawnQueue.push({
           type: 'mothership',
           hp: bossHP,
@@ -399,8 +409,8 @@ export default class GameScene extends Phaser.Scene {
         });
       } else {
         // Normal wave — baby ships in clusters + mothership + special enemies
-        const babyCount = WAVE_CONFIG.babyShipsPerWave(this.currentWave);
-        const motherHP = WAVE_CONFIG.mothershipHealth(this.currentWave);
+        const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul);
+        const motherHP = Math.ceil(WAVE_CONFIG.mothershipHealth(this.currentWave) * dm.hpMul);
         const wave = this.currentWave;
         // Cluster size scales with wave
         const clusterSize = Math.max(3, Math.floor(wave * 3));
@@ -416,8 +426,8 @@ export default class GameScene extends Phaser.Scene {
           for (let i = 0; i < splitterCount; i++) {
             this.spawnQueue.push({
               type: 'splitter', isSplitter: true,
-              hp: 60 + wave * 15, speed: babySpeed * 0.9,
-              reward: 20, fireRate: 99999, fireRange: 0, delay: 800,
+              hp: Math.ceil((60 + wave * 15) * dm.hpMul), speed: babySpeed * 0.9,
+              reward: Math.ceil(20 * dm.rewardMul), fireRate: 99999, fireRange: 0, delay: 800,
             });
           }
         }
@@ -426,8 +436,8 @@ export default class GameScene extends Phaser.Scene {
         if (wave >= 3) {
           this.spawnQueue.push({
             type: 'shieldBearer',
-            hp: 40 + wave * 10, speed: babySpeed * 0.8,
-            reward: 25, fireRate: WAVE_CONFIG.babyFireRate, fireRange: WAVE_CONFIG.babyFireRange,
+            hp: Math.ceil((40 + wave * 10) * dm.hpMul), speed: babySpeed * 0.8,
+            reward: Math.ceil(25 * dm.rewardMul), fireRate: WAVE_CONFIG.babyFireRate, fireRange: WAVE_CONFIG.babyFireRange,
             shieldHits: Math.min(1 + Math.floor(wave / 3), 4), delay: 900,
           });
         }
@@ -436,8 +446,8 @@ export default class GameScene extends Phaser.Scene {
         if (wave >= 4) {
           this.spawnQueue.push({
             type: 'carrier',
-            hp: 120 + wave * 20, speed: babySpeed * 0.6,
-            reward: 40, fireRate: 99999, fireRange: 0, delay: 1000,
+            hp: Math.ceil((120 + wave * 20) * dm.hpMul), speed: babySpeed * 0.6,
+            reward: Math.ceil(40 * dm.rewardMul), fireRate: 99999, fireRange: 0, delay: 1000,
           });
         }
 
@@ -445,8 +455,8 @@ export default class GameScene extends Phaser.Scene {
         if (wave >= 5) {
           this.spawnQueue.push({
             type: 'empFrigate', isEmp: true,
-            hp: 50 + wave * 12, speed: babySpeed * 0.85,
-            reward: 30, fireRate: 2500, fireRange: 300, delay: 1000,
+            hp: Math.ceil((50 + wave * 12) * dm.hpMul), speed: babySpeed * 0.85,
+            reward: Math.ceil(30 * dm.rewardMul), fireRate: 2500, fireRange: 300, delay: 1000,
           });
         }
 
@@ -527,11 +537,12 @@ export default class GameScene extends Phaser.Scene {
   spawnEnemy(config) {
     const hp = config.hp ?? (config.type === 'mothership' ? 200 : 20);
     const speed = config.speed ?? 0.025;
-    const reward = config.isBoss
+    const baseReward = config.isBoss
       ? GAME_CONFIG.rewards.mothership * 10
       : config.type === 'mothership'
         ? GAME_CONFIG.rewards.mothership
         : config.reward ?? GAME_CONFIG.rewards.babyShip;
+    const reward = Math.ceil(baseReward * this.diffMod.rewardMul);
 
     const fireRate = config.fireRate ?? (config.type === 'babyShip' ? WAVE_CONFIG.babyFireRate : 3000);
     const fireRange = config.fireRange ?? (config.type === 'babyShip' ? WAVE_CONFIG.babyFireRange : 200);
