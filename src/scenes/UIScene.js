@@ -529,26 +529,24 @@ export default class UIScene extends Phaser.Scene {
         }),
       });
 
+      // Whether save succeeded or not, go to game over
       if (response.ok) {
-        const result = await response.json();
-        const rankMsg = result.rank ? `Saved! Rank #${result.rank}` : 'Saved!';
-        this.saveWaveBtn.setText(rankMsg);
-        this.saveWaveBtn.setStyle({ fill: '#00ff88', backgroundColor: '#003322' });
-      } else {
-        const err = await response.json().catch(() => ({}));
-        this.saveWaveBtn.setText(err.error || 'Error');
-        this.saveWaveBtn.setStyle({ fill: '#ff4444', backgroundColor: '#330000' });
+        await response.json();
       }
     } catch (e) {
-      this.saveWaveBtn.setText('Network error');
-      this.saveWaveBtn.setStyle({ fill: '#ff4444', backgroundColor: '#330000' });
+      // Network error — still go to game over
     }
 
-    // Re-enable after 3 seconds
-    this.time.delayedCall(3000, () => {
-      this.saveWaveBtn.setText('Save Wave');
-      this.saveWaveBtn.setStyle({ fill: '#44ff88', backgroundColor: '#003322' });
-      this.saveWaveBtn.setInteractive({ useHandCursor: true });
+    // Kill the player — go straight to game over (score already saved)
+    gs.waveActive = false;
+    gs.enemies = [];
+    gs.scene.stop('UIScene');
+    gs.scene.start('GameOverScene', {
+      wave: gs.currentWave,
+      kills: gs.totalKills,
+      creditsEarned: gs.totalCreditsEarned,
+      timeSurvivedMs: Date.now() - gs.gameStartTime,
+      cheatMode: gs.cheatMode,
     });
   }
 
