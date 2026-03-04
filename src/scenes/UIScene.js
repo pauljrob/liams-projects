@@ -499,12 +499,11 @@ export default class UIScene extends Phaser.Scene {
     }
   }
 
-  async saveWaveToLeaderboard() {
+  saveWaveToLeaderboard() {
     const gs = this.gameScene;
     const savedName = localStorage.getItem('spaceTD_playerName') || '';
 
     if (!savedName || savedName.length < 3) {
-      // Prompt to enter name first — show a brief message
       const msg = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Play a full game first to set your name!', {
         fontSize: '14px', fill: '#ff6644', fontFamily: 'monospace',
         stroke: '#000000', strokeThickness: 3,
@@ -516,37 +515,32 @@ export default class UIScene extends Phaser.Scene {
     this.saveWaveBtn.setText('Saving...');
     this.saveWaveBtn.disableInteractive();
 
-    try {
-      const response = await fetch('/api/leaderboard', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: savedName,
-          wave: gs.currentWave || 0,
-          kills: gs.totalKills || 0,
-          timeSurvivedMs: Date.now() - gs.gameStartTime,
-          creditsEarned: gs.totalCreditsEarned || 0,
-        }),
-      });
-
-      // Whether save succeeded or not, go to game over
-      if (response.ok) {
-        await response.json();
-      }
-    } catch (e) {
-      // Network error — still go to game over
-    }
-
-    // Kill the player — go straight to game over (score already saved)
-    gs.waveActive = false;
-    gs.enemies = [];
-    gs.scene.stop('UIScene');
-    gs.scene.start('GameOverScene', {
-      wave: gs.currentWave,
-      kills: gs.totalKills,
-      creditsEarned: gs.totalCreditsEarned,
+    // Capture stats now before scene transitions
+    const stats = {
+      wave: gs.currentWave || 0,
+      kills: gs.totalKills || 0,
       timeSurvivedMs: Date.now() - gs.gameStartTime,
+      creditsEarned: gs.totalCreditsEarned || 0,
       cheatMode: gs.cheatMode,
+    };
+
+    // Save to leaderboard, then kill the player
+    fetch('/api/leaderboard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        name: savedName,
+        wave: stats.wave,
+        kills: stats.kills,
+        timeSurvivedMs: stats.timeSurvivedMs,
+        creditsEarned: stats.creditsEarned,
+      }),
+    }).finally(() => {
+      // Kill the player — go to game over (score already saved)
+      gs.waveActive = false;
+      gs.enemies = [];
+      gs.scene.stop('UIScene');
+      gs.scene.start('GameOverScene', stats);
     });
   }
 
