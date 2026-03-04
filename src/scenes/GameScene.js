@@ -785,13 +785,21 @@ export default class GameScene extends Phaser.Scene {
 
   fastForwardWave() {
     if (!this.waveActive) return;
-    // Clear all pending spawns and instantly kill every enemy on screen
+    // Clear all pending spawns
     this.spawnQueue = [];
     this.pendingMothership = null;
     this.mothershipSpawning = false;
-    for (const enemy of [...this.enemies]) {
-      if (!enemy.dead && !enemy.reachedBase) enemy.takeDamage(99999);
+    // Force-kill every enemy without triggering splitter/carrier spawns
+    for (const enemy of this.enemies) {
+      if (!enemy.dead) {
+        enemy.dead = true;
+        this.credits += enemy.reward;
+        this.totalCreditsEarned += enemy.reward;
+        this.totalKills++;
+        enemy.destroy();
+      }
     }
+    this.enemies = [];
     this.waveActive = false;
     // Skip announcement — jump straight into next wave
     this.startNextWaveImmediate();

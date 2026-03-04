@@ -445,6 +445,20 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerover', () => this.eventsBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.eventsBtn.setStyle({ fill: '#00ccff' }));
 
+    // Save Wave button — hidden until secret code unlocked
+    this.saveWaveBtn = this.add.text(GAME_CONFIG.width / 2 - 70, 36, 'Save Wave', {
+      fontSize: '13px',
+      fill: '#44ff88',
+      fontFamily: 'monospace',
+      backgroundColor: '#003322',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).setVisible(false);
+
+    this.saveWaveBtn
+      .on('pointerdown', () => this.saveWaveToLeaderboard())
+      .on('pointerover', () => this.saveWaveBtn.setStyle({ fill: '#ffffff' }))
+      .on('pointerout', () => this.saveWaveBtn.setStyle({ fill: '#44ff88' }));
+
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
@@ -485,6 +499,59 @@ export default class UIScene extends Phaser.Scene {
     }
   }
 
+  async saveWaveToLeaderboard() {
+    const gs = this.gameScene;
+    const savedName = localStorage.getItem('spaceTD_playerName') || '';
+
+    if (!savedName || savedName.length < 3) {
+      // Prompt to enter name first — show a brief message
+      const msg = this.add.text(this.scale.width / 2, this.scale.height / 2, 'Play a full game first to set your name!', {
+        fontSize: '14px', fill: '#ff6644', fontFamily: 'monospace',
+        stroke: '#000000', strokeThickness: 3,
+      }).setOrigin(0.5).setDepth(500);
+      this.time.delayedCall(2000, () => msg.destroy());
+      return;
+    }
+
+    this.saveWaveBtn.setText('Saving...');
+    this.saveWaveBtn.disableInteractive();
+
+    try {
+      const response = await fetch('/api/leaderboard', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: savedName,
+          wave: gs.currentWave || 0,
+          kills: gs.totalKills || 0,
+          timeSurvivedMs: Date.now() - gs.gameStartTime,
+          creditsEarned: gs.totalCreditsEarned || 0,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        const rankMsg = result.rank ? `Saved! Rank #${result.rank}` : 'Saved!';
+        this.saveWaveBtn.setText(rankMsg);
+        this.saveWaveBtn.setStyle({ fill: '#00ff88', backgroundColor: '#003322' });
+      } else {
+        const err = await response.json().catch(() => ({}));
+        this.saveWaveBtn.setText(err.error || 'Error');
+        this.saveWaveBtn.setStyle({ fill: '#ff4444', backgroundColor: '#330000' });
+      }
+    } catch (e) {
+      this.saveWaveBtn.setText('Network error');
+      this.saveWaveBtn.setStyle({ fill: '#ff4444', backgroundColor: '#330000' });
+    }
+
+    // Re-enable after 3 seconds
+    this.time.delayedCall(3000, () => {
+      this.saveWaveBtn.setText('Save Wave');
+      this.saveWaveBtn.setStyle({ fill: '#44ff88', backgroundColor: '#003322' });
+      this.saveWaveBtn.setInteractive({ useHandCursor: true });
+    });
+  }
+
   showCheatExtras() {
     this.stopWaveBtn.setVisible(true);
     this.skipWaveBtn.setVisible(true);
@@ -492,6 +559,7 @@ export default class UIScene extends Phaser.Scene {
     this.ultimateBossBtn.setVisible(true);
     this.addCreditsBtn.setVisible(true);
     this.eventsBtn.setVisible(true);
+    this.saveWaveBtn.setVisible(true);
   }
 
   toggleEventsList() {
