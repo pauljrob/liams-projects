@@ -258,15 +258,6 @@ export default class UIScene extends Phaser.Scene {
           targets: flash, alpha: 0, y: H / 2 - 60, duration: 2000,
           onComplete: () => flash.destroy(),
         });
-        // Leaderboard warning
-        const lbWarn = this.add.text(W / 2, H / 2 + 36, 'Score will not be saved to leaderboard', {
-          fontSize: '13px', fill: '#ff8844', fontFamily: 'monospace',
-          stroke: '#000000', strokeThickness: 3,
-        }).setOrigin(0.5).setDepth(200);
-        this.tweens.add({
-          targets: lbWarn, alpha: 0, y: H / 2 - 20, duration: 3000, delay: 1000,
-          onComplete: () => lbWarn.destroy(),
-        });
       } else if (guess !== SECRET) {
         const wrong = this.add.text(W / 2, H / 2, '❌ Unknown code', {
           fontSize: '16px', fill: '#ff4444', fontFamily: 'monospace',
@@ -579,15 +570,6 @@ export default class UIScene extends Phaser.Scene {
           y: H / 2 - 60,
           duration: 2000,
           onComplete: () => flash.destroy(),
-        });
-        // Leaderboard warning
-        const lbWarn = this.add.text(W / 2, H / 2 + 36, 'Score will not be saved to leaderboard', {
-          fontSize: '13px', fill: '#ff8844', fontFamily: 'monospace',
-          stroke: '#000000', strokeThickness: 3,
-        }).setOrigin(0.5).setDepth(200);
-        this.tweens.add({
-          targets: lbWarn, alpha: 0, y: H / 2 - 20, duration: 3000, delay: 1000,
-          onComplete: () => lbWarn.destroy(),
         });
       }
     };

@@ -55,20 +55,8 @@ export default class GameOverScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0.5);
 
-    if (this.stats.cheatMode) {
-      // Cheat mode — no submission, show message + leaderboard view-only
-      this.add.text(cx, 128, 'Cheat mode — score not saved to leaderboard', {
-        fontSize: '12px',
-        fill: '#ff8844',
-        fontFamily: 'monospace',
-      }).setOrigin(0.5);
-
-      this.showLeaderboard(150, null, null);
-      this.showRestartPrompt();
-    } else {
-      // Show name input
-      this.showNameInput(130);
-    }
+    // Show name input for all modes (cheat or not)
+    this.showNameInput(130);
   }
 
   showNameInput(startY) {
