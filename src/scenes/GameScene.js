@@ -801,7 +801,28 @@ export default class GameScene extends Phaser.Scene {
     }
     this.enemies = [];
     this.waveActive = false;
-    // Skip announcement — jump straight into next wave
+
+    // Skip ahead 1000 waves — accumulate approximate kills/credits
+    const dm = this.diffMod;
+    for (let w = this.currentWave + 1; w <= this.currentWave + 999; w++) {
+      const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(w) * dm.countMul);
+      // Approximate kills: babies + mothership + specials
+      let waveKills = babyCount + 1; // babies + mothership
+      if (w >= 2) waveKills += (w >= 6 ? 2 : 1) + 2; // splitters + minis
+      if (w >= 3) waveKills += 1; // shield bearer
+      if (w >= 4) waveKills += 1; // carrier
+      if (w >= 5) waveKills += 1; // emp frigate
+      this.totalKills += waveKills;
+      // Approximate credits
+      const babyReward = Math.ceil(GAME_CONFIG.rewards.babyShip * dm.rewardMul);
+      const motherReward = Math.ceil(GAME_CONFIG.rewards.mothership * dm.rewardMul);
+      const waveCredits = babyCount * babyReward + motherReward;
+      this.credits += waveCredits;
+      this.totalCreditsEarned += waveCredits;
+    }
+    this.currentWave += 999; // startNextWaveImmediate will add 1 more
+
+    // Start the wave at the new number
     this.startNextWaveImmediate();
   }
 
