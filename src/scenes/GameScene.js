@@ -911,34 +911,64 @@ export default class GameScene extends Phaser.Scene {
     this.showEventAnnouncement('METEOR STORM! (60s)', '#ffaa00', () => {
       const W = this.scale.width;
       const H = this.scale.height;
+      const METEOR_DAMAGE = 100;
 
-      // Rain meteors every 2 seconds for 1 minute
-      const meteorEvent = this.time.addEvent({
-        delay: 2000,
-        repeat: 29, // 30 waves total over 60 seconds
+      // Continuous meteors — spawn one every 150ms for 60 seconds
+      this.time.addEvent({
+        delay: 150,
+        repeat: 399, // 400 meteors over 60 seconds
         callback: () => {
-          // Spawn meteor particles
-          for (let i = 0; i < 8; i++) {
-            const x = Phaser.Math.Between(0, W);
-            const meteor = this.add.circle(x, -10, Phaser.Math.Between(3, 7), 0xff8800)
-              .setDepth(250).setAlpha(0.9);
-            this.tweens.add({
-              targets: meteor,
-              x: x + Phaser.Math.Between(-80, 80),
-              y: H + 20,
-              alpha: 0,
-              duration: Phaser.Math.Between(600, 1200),
-              delay: Phaser.Math.Between(0, 300),
-              onComplete: () => meteor.destroy(),
-            });
-          }
+          const startX = Phaser.Math.Between(0, W);
+          const endX = startX + Phaser.Math.Between(-60, 60);
+          const size = Phaser.Math.Between(3, 8);
+          const duration = Phaser.Math.Between(400, 800);
 
-          // Damage all enemies 10% of max HP each wave
-          for (const enemy of [...this.enemies]) {
-            if (enemy.dead) continue;
-            const dmg = Math.ceil(enemy.maxHp * 0.10);
-            enemy.takeDamage(dmg);
-          }
+          // Meteor visual — falls from top to bottom
+          const meteor = this.add.circle(startX, -10, size, 0xff8800)
+            .setDepth(250).setAlpha(0.9);
+
+          // Trail effect
+          const trail = this.add.circle(startX, -10, size - 1, 0xffcc00)
+            .setDepth(249).setAlpha(0.5);
+
+          this.tweens.add({
+            targets: trail,
+            x: endX,
+            y: H + 20,
+            alpha: 0,
+            duration: duration + 100,
+            onComplete: () => trail.destroy(),
+          });
+
+          this.tweens.add({
+            targets: meteor,
+            x: endX,
+            y: H + 20,
+            alpha: 0,
+            duration,
+            onUpdate: () => {
+              // Check collision with enemies each frame
+              for (const enemy of this.enemies) {
+                if (enemy.dead) continue;
+                const dx = meteor.x - enemy.x;
+                const dy = meteor.y - enemy.y;
+                if (Math.sqrt(dx * dx + dy * dy) < 20) {
+                  enemy.takeDamage(METEOR_DAMAGE);
+                  // Small impact flash
+                  const flash = this.add.circle(meteor.x, meteor.y, 12, 0xffaa00)
+                    .setDepth(251).setAlpha(0.8);
+                  this.tweens.add({
+                    targets: flash, alpha: 0, scaleX: 2, scaleY: 2,
+                    duration: 200, onComplete: () => flash.destroy(),
+                  });
+                  meteor.destroy();
+                  trail.destroy();
+                  return;
+                }
+              }
+            },
+            onComplete: () => meteor.destroy(),
+          });
         },
       });
     });
