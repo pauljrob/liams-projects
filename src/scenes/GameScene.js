@@ -477,61 +477,22 @@ export default class GameScene extends Phaser.Scene {
     const waveColor = isBossWave ? '#ff4444' : '#00ccff';
     const waveLabel = isBossWave ? `⚠ BOSS WAVE ${wave} ⚠` : `Wave ${wave}`;
 
-    // Wave title
-    const title = this.add.text(W / 2, H / 2 - 40, waveLabel, {
+    // Wave title — flash briefly then start
+    const title = this.add.text(W / 2, H / 2, waveLabel, {
       fontSize: isBossWave ? '32px' : '28px',
       fill: waveColor,
       fontFamily: 'monospace',
       stroke: '#000000',
       strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(300);
+    }).setOrigin(0.5).setDepth(300).setAlpha(0);
 
-    // "Enemies incoming" subtitle
-    const sub = this.add.text(W / 2, H / 2, 'Enemies incoming...', {
-      fontSize: '16px',
-      fill: '#aaaaaa',
-      fontFamily: 'monospace',
-      stroke: '#000000',
-      strokeThickness: 3,
-    }).setOrigin(0.5).setDepth(300);
-
-    // Countdown number
-    const countText = this.add.text(W / 2, H / 2 + 48, '3', {
-      fontSize: '48px',
-      fill: '#ffdd44',
-      fontFamily: 'monospace',
-      stroke: '#000000',
-      strokeThickness: 5,
-    }).setOrigin(0.5).setDepth(300);
-
-    const cleanup = () => {
-      title.destroy();
-      sub.destroy();
-      countText.destroy();
-    };
-
-    const tick = (n) => {
-      countText.setText(`${n}`);
-      countText.setAlpha(1).setScale(1.4);
-      this.tweens.add({
-        targets: countText,
-        alpha: 0.3,
-        scaleX: 1,
-        scaleY: 1,
-        duration: 900,
-        ease: 'Sine.easeIn',
-      });
-      if (n > 1) {
-        this.time.delayedCall(1000, () => tick(n - 1));
-      } else {
-        this.time.delayedCall(1000, () => {
-          cleanup();
-          onComplete();
-        });
-      }
-    };
-
-    tick(3);
+    this.tweens.add({
+      targets: title, alpha: 1, duration: 300, yoyo: true, hold: 800,
+      onComplete: () => {
+        title.destroy();
+        onComplete();
+      },
+    });
   }
 
   spawnEnemy(config) {
@@ -827,12 +788,80 @@ export default class GameScene extends Phaser.Scene {
     // Clear all pending spawns and instantly kill every enemy on screen
     this.spawnQueue = [];
     this.pendingMothership = null;
+    this.mothershipSpawning = false;
     for (const enemy of [...this.enemies]) {
       if (!enemy.dead && !enemy.reachedBase) enemy.takeDamage(99999);
     }
     this.waveActive = false;
-    // Start next wave (includes the 3-2-1 countdown)
-    this.startNextWave();
+    // Skip announcement — jump straight into next wave
+    this.startNextWaveImmediate();
+  }
+
+  // Like startNextWave but without the announcement delay (used by auto clicker)
+  startNextWaveImmediate() {
+    this.currentWave++;
+    const isBossWave = this.currentWave % 10 === 0;
+    this.spawnQueue = [];
+
+    const dm = this.diffMod;
+    const babySpeed = WAVE_CONFIG.babyShipSpeed(this.currentWave) * dm.speedMul;
+    const babyHP = Math.ceil(WAVE_CONFIG.babyShipHealth(this.currentWave) * dm.hpMul);
+    const motherFireRate = WAVE_CONFIG.mothershipFireRate(this.currentWave);
+    const motherFireRange = WAVE_CONFIG.mothershipFireRange;
+
+    if (isBossWave) {
+      const bossHP = Math.ceil(WAVE_CONFIG.bossHealth(this.currentWave) * dm.hpMul);
+      this.spawnQueue.push({
+        type: 'mothership', hp: bossHP, fireRate: 3000, fireRange: motherFireRange, isBoss: true,
+      });
+    } else {
+      const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul);
+      const motherHP = Math.ceil(WAVE_CONFIG.mothershipHealth(this.currentWave) * dm.hpMul);
+      const wave = this.currentWave;
+      const clusterSize = Math.max(3, Math.floor(wave * 3));
+      for (let i = 0; i < babyCount; i++) {
+        const posInCluster = i % clusterSize;
+        const delay = posInCluster === 0 && i > 0 ? 900 : 400;
+        this.spawnQueue.push({ type: 'babyShip', speed: babySpeed, hp: babyHP, delay });
+      }
+      if (wave >= 2) {
+        const splitterCount = wave >= 6 ? 2 : 1;
+        for (let i = 0; i < splitterCount; i++) {
+          this.spawnQueue.push({
+            type: 'splitter', isSplitter: true,
+            hp: Math.ceil((60 + wave * 15) * dm.hpMul), speed: babySpeed * 0.9,
+            reward: Math.ceil(20 * dm.rewardMul), fireRate: 99999, fireRange: 0, delay: 800,
+          });
+        }
+      }
+      if (wave >= 3) {
+        this.spawnQueue.push({
+          type: 'shieldBearer',
+          hp: Math.ceil((40 + wave * 10) * dm.hpMul), speed: babySpeed * 0.8,
+          reward: Math.ceil(25 * dm.rewardMul), fireRate: WAVE_CONFIG.babyFireRate, fireRange: WAVE_CONFIG.babyFireRange,
+          shieldHits: Math.min(1 + Math.floor(wave / 3), 4), delay: 900,
+        });
+      }
+      if (wave >= 4) {
+        this.spawnQueue.push({
+          type: 'carrier',
+          hp: Math.ceil((120 + wave * 20) * dm.hpMul), speed: babySpeed * 0.6,
+          reward: Math.ceil(40 * dm.rewardMul), fireRate: 99999, fireRange: 0, delay: 1000,
+        });
+      }
+      if (wave >= 5) {
+        this.spawnQueue.push({
+          type: 'empFrigate', isEmp: true,
+          hp: Math.ceil((50 + wave * 12) * dm.hpMul), speed: babySpeed * 0.85,
+          reward: Math.ceil(30 * dm.rewardMul), fireRate: 2500, fireRange: 300, delay: 1000,
+        });
+      }
+      this.pendingMothership = { type: 'mothership', hp: motherHP, fireRate: motherFireRate, fireRange: motherFireRange };
+    }
+
+    playWaveStart(this.currentWave);
+    this.waveActive = true;
+    this.spawnTimer = 0;
   }
 
   stopWave() {
