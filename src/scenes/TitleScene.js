@@ -149,10 +149,145 @@ export default class TitleScene extends Phaser.Scene {
 
   startGame(difficulty) {
     this.input.removeAllListeners('pointerdown');
-    this.cameras.main.fadeOut(300, 0, 0, 16);
-    this.cameras.main.once('camerafadeoutcomplete', () => {
-      this.scene.start('GameScene', { difficulty });
+    this.selectedDifficulty = difficulty;
+    this.showServerNameInput();
+  }
+
+  showServerNameInput() {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const elements = [];
+
+    // Dim background
+    const bg = this.add.rectangle(W / 2, H / 2, W, H, 0x000000, 0.85)
+      .setDepth(100).setInteractive();
+    elements.push(bg);
+
+    const prompt = this.add.text(W / 2, 40, 'Name your server:', {
+      fontSize: '18px', fill: '#00ccff', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(101);
+    elements.push(prompt);
+
+    const savedServer = localStorage.getItem('spaceTD_serverName') || '';
+    let serverText = savedServer;
+
+    const display = this.add.text(W / 2, 80, (serverText || '') + '|', {
+      fontSize: '22px', fill: '#ffdd00', fontFamily: 'monospace',
+      backgroundColor: '#111122', padding: { x: 16, y: 8 },
+    }).setOrigin(0.5).setDepth(101);
+    elements.push(display);
+
+    const updateDisplay = () => {
+      display.setText((serverText || '') + '|');
+    };
+
+    const typeLetter = (letter) => {
+      if (serverText.length >= 20) return;
+      serverText += letter;
+      updateDisplay();
+    };
+
+    const backspace = () => {
+      serverText = serverText.slice(0, -1);
+      updateDisplay();
+    };
+
+    const submit = () => {
+      const name = serverText.trim().replace(/[^a-zA-Z0-9 ]/g, '');
+      if (name.length < 2) {
+        const warn = this.add.text(W / 2, 110, 'Server name must be at least 2 characters', {
+          fontSize: '11px', fill: '#ff6644', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(102);
+        this.time.delayedCall(2000, () => warn.destroy());
+        return;
+      }
+      closeInput();
+      localStorage.setItem('spaceTD_serverName', name);
+      this.cameras.main.fadeOut(300, 0, 0, 16);
+      this.cameras.main.once('camerafadeoutcomplete', () => {
+        this.scene.start('GameScene', { difficulty: this.selectedDifficulty, serverName: name });
+      });
+    };
+
+    // On-screen keyboard
+    const rows = [
+      ['Q','W','E','R','T','Y','U','I','O','P'],
+      ['A','S','D','F','G','H','J','K','L'],
+      ['Z','X','C','V','B','N','M'],
+      ['1','2','3','4','5','6','7','8','9','0'],
+    ];
+    const keySize = 30;
+    const keyGap = 3;
+    const kbStartY = 130;
+
+    rows.forEach((row, ri) => {
+      const rowW = row.length * (keySize + keyGap) - keyGap;
+      const sx = (W - rowW) / 2;
+      row.forEach((letter, ci) => {
+        const x = sx + ci * (keySize + keyGap) + keySize / 2;
+        const y = kbStartY + ri * (keySize + keyGap) + keySize / 2;
+
+        const keyBg = this.add.rectangle(x, y, keySize, keySize, 0x222233, 1)
+          .setDepth(101).setInteractive({ useHandCursor: true });
+        const keyTxt = this.add.text(x, y, letter, {
+          fontSize: '14px', fill: '#ffffff', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(102);
+
+        keyBg.on('pointerdown', () => {
+          typeLetter(letter);
+          keyBg.setFillStyle(0x00ffcc, 1);
+        });
+        keyBg.on('pointerup', () => keyBg.setFillStyle(0x222233, 1));
+        keyBg.on('pointerout', () => keyBg.setFillStyle(0x222233, 1));
+
+        elements.push(keyBg, keyTxt);
+      });
     });
+
+    // Space bar
+    const spaceY = kbStartY + 4 * (keySize + keyGap) + keySize / 2;
+    const spaceBg = this.add.rectangle(W / 2, spaceY, 160, keySize, 0x222233, 1)
+      .setDepth(101).setInteractive({ useHandCursor: true });
+    const spaceTxt = this.add.text(W / 2, spaceY, 'SPACE', {
+      fontSize: '12px', fill: '#888888', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(102);
+    spaceBg.on('pointerdown', () => {
+      typeLetter(' ');
+      spaceBg.setFillStyle(0x00ffcc, 1);
+    });
+    spaceBg.on('pointerup', () => spaceBg.setFillStyle(0x222233, 1));
+    spaceBg.on('pointerout', () => spaceBg.setFillStyle(0x222233, 1));
+    elements.push(spaceBg, spaceTxt);
+
+    // Bottom buttons: Delete, Start
+    const btnY = spaceY + keySize + 10;
+    const btnStyle = { fontSize: '13px', fill: '#ffffff', fontFamily: 'monospace', padding: { x: 12, y: 8 } };
+
+    const delBtn = this.add.text(W / 2 - 80, btnY, 'Delete', {
+      ...btnStyle, backgroundColor: '#663333',
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+    delBtn.on('pointerdown', backspace);
+    elements.push(delBtn);
+
+    const startBtn = this.add.text(W / 2 + 80, btnY, 'Start Game', {
+      ...btnStyle, backgroundColor: '#336633',
+    }).setOrigin(0.5).setDepth(101).setInteractive({ useHandCursor: true });
+    startBtn.on('pointerdown', submit);
+    elements.push(startBtn);
+
+    // Physical keyboard support
+    const keyHandler = (event) => {
+      if (event.key === 'Enter') { submit(); return; }
+      if (event.key === 'Backspace') { backspace(); return; }
+      if (event.key.length === 1 && /[a-zA-Z0-9 ]/.test(event.key)) { typeLetter(event.key.toUpperCase()); }
+    };
+
+    const closeInput = () => {
+      window.removeEventListener('keydown', keyHandler);
+      for (const el of elements) el.destroy();
+    };
+
+    window.addEventListener('keydown', keyHandler);
   }
 
   openLeaderboard() {

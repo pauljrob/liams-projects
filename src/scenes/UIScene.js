@@ -504,6 +504,23 @@ export default class UIScene extends Phaser.Scene {
     this.giftPanelOpen = false;
     this.giftPanelItems = [];
 
+    // Servers button — hidden until secret code unlocked
+    this.serversBtn = this.add.text(GAME_CONFIG.width / 2 - 280, 36, 'Servers', {
+      fontSize: '13px',
+      fill: '#00ddff',
+      fontFamily: 'monospace',
+      backgroundColor: '#002233',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).setVisible(false);
+
+    this.serversBtn
+      .on('pointerdown', () => this.toggleServerPanel())
+      .on('pointerover', () => this.serversBtn.setStyle({ fill: '#ffffff' }))
+      .on('pointerout', () => this.serversBtn.setStyle({ fill: '#00ddff' }));
+
+    this.serverPanelOpen = false;
+    this.serverPanelItems = [];
+
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
@@ -757,6 +774,97 @@ export default class UIScene extends Phaser.Scene {
     this.giftPanelOpen = false;
   }
 
+  toggleServerPanel() {
+    if (this.serverPanelOpen) {
+      this.closeServerPanel();
+      return;
+    }
+    this.showServerList();
+  }
+
+  async showServerList() {
+    this.serverPanelOpen = true;
+    const items = this.serverPanelItems;
+    const W = GAME_CONFIG.width;
+
+    // Panel background
+    const bg = this.add.rectangle(W / 2, 200, 340, 280, 0x000011, 0.95)
+      .setDepth(500).setInteractive();
+    items.push(bg);
+
+    const border = this.add.rectangle(W / 2, 200, 340, 280)
+      .setStrokeStyle(1, 0x00ddff, 0.6).setDepth(500);
+    items.push(border);
+
+    const title = this.add.text(W / 2, 75, 'Active Servers', {
+      fontSize: '16px', fill: '#00ddff', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(501);
+    items.push(title);
+
+    const loading = this.add.text(W / 2, 120, 'Loading...', {
+      fontSize: '12px', fill: '#888888', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(501);
+    items.push(loading);
+
+    try {
+      const res = await fetch('/api/players');
+      if (!res.ok) throw new Error('Failed');
+      const data = await res.json();
+      loading.destroy();
+      items.splice(items.indexOf(loading), 1);
+
+      if (!data.players || data.players.length === 0) {
+        const none = this.add.text(W / 2, 140, 'No players online', {
+          fontSize: '13px', fill: '#666666', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(501);
+        items.push(none);
+      } else {
+        // Group players by server name
+        const servers = {};
+        for (const p of data.players) {
+          const sn = p.serverName || 'Unknown';
+          if (!servers[sn]) servers[sn] = [];
+          servers[sn].push(p.name);
+        }
+
+        let y = 100;
+        for (const [serverName, playerNames] of Object.entries(servers)) {
+          const serverLabel = this.add.text(W / 2 - 150, y, `[${serverName}]`, {
+            fontSize: '14px', fill: '#00ddff', fontFamily: 'monospace',
+          }).setDepth(501);
+          items.push(serverLabel);
+          y += 20;
+
+          for (const pName of playerNames) {
+            const playerLabel = this.add.text(W / 2 - 130, y, pName, {
+              fontSize: '12px', fill: '#aaaaaa', fontFamily: 'monospace',
+            }).setDepth(501);
+            items.push(playerLabel);
+            y += 18;
+          }
+          y += 6;
+        }
+      }
+    } catch {
+      loading.setText('Error loading servers');
+      loading.setFill('#ff4444');
+    }
+
+    // Close button
+    const closeBtn = this.add.text(W / 2, 325, 'Close', {
+      fontSize: '13px', fill: '#ffffff', fontFamily: 'monospace',
+      backgroundColor: '#333344', padding: { x: 12, y: 6 },
+    }).setOrigin(0.5).setDepth(501).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerdown', () => this.closeServerPanel());
+    items.push(closeBtn);
+  }
+
+  closeServerPanel() {
+    this.serverPanelItems.forEach(i => i.destroy());
+    this.serverPanelItems = [];
+    this.serverPanelOpen = false;
+  }
+
   showCheatExtras() {
     this.stopWaveBtn.setVisible(true);
     this.skipWaveBtn.setVisible(true);
@@ -767,6 +875,7 @@ export default class UIScene extends Phaser.Scene {
     this.saveWaveBtn.setVisible(true);
     this.upgradeAllBtn.setVisible(true);
     this.giftBtn.setVisible(true);
+    this.serversBtn.setVisible(true);
   }
 
   toggleEventsList() {

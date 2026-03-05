@@ -16,6 +16,7 @@ export default class GameScene extends Phaser.Scene {
   init(data) {
     this.cheatMode = data && data.cheatMode ? true : false;
     this.difficulty = (data && data.difficulty) || 'normal';
+    this.serverName = (data && data.serverName) || 'Unknown';
   }
 
   create() {
@@ -232,7 +233,7 @@ export default class GameScene extends Phaser.Scene {
       await fetch('/api/players', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ name, sessionId: this.sessionId }),
+        body: JSON.stringify({ name, sessionId: this.sessionId, serverName: this.serverName }),
       });
     } catch {
       // Silent fail
@@ -245,10 +246,11 @@ export default class GameScene extends Phaser.Scene {
       if (!res.ok) return;
       const data = await res.json();
       for (const event of (data.events || [])) {
+        const serverTag = event.serverName ? ` (${event.serverName})` : '';
         if (event.type === 'join') {
-          this.showPlayerNotification(`${event.name} joined`, '#44ff88');
+          this.showPlayerNotification(`${event.name}${serverTag} joined`, '#44ff88');
         } else if (event.type === 'leave') {
-          this.showPlayerNotification(`${event.name} left`, '#ff6666');
+          this.showPlayerNotification(`${event.name}${serverTag} left`, '#ff6666');
         }
         if (event.time > this.playerEventsSince) {
           this.playerEventsSince = event.time;
