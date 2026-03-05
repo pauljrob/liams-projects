@@ -77,7 +77,7 @@ export const UPGRADE_DEFS = {
   missile:    [
     { label: 'Damage',   key: 'damage',    costs: [80, 160, 320], values: [80, 120, 180] },
     { label: 'Range',    key: 'range',     costs: [80, 160, 320], values: [400, 500, 620] },
-    { label: 'Splash',   key: 'splash',    costs: [80, 160, 320], values: [90, 130, 180] },
+    { label: 'Fire Rate',key: 'fireRate',  costs: [80, 160, 320], values: [2200, 1600, 1000] },
   ],
   forceField: [
     { label: 'Range',    key: 'range',     costs: [60, 120, 240], values: [310, 400, 500] },
@@ -87,11 +87,11 @@ export const UPGRADE_DEFS = {
   plasmaGun: [
     { label: 'Damage',    key: 'damage',     costs: [60, 120, 240], values: [22, 30, 40] },
     { label: 'Burn DPS',  key: 'burnDamage', costs: [60, 120, 240], values: [8, 12, 18] },
-    { label: 'Pool Size', key: 'burnRadius', costs: [60, 120, 240], values: [55, 70, 90] },
+    { label: 'Fire Rate', key: 'fireRate',   costs: [60, 120, 240], values: [1300, 900, 600] },
   ],
   plasmaRailgun: [
     { label: 'Damage',   key: 'damage',     costs: [100, 200, 400], values: [35, 50, 70] },
-    { label: 'Burn DPS', key: 'burnDamage', costs: [100, 200, 400], values: [7, 12, 20] },
+    { label: 'Fire Rate',key: 'fireRate',   costs: [100, 200, 400], values: [1500, 1000, 700] },
     { label: 'Range',    key: 'range',      costs: [100, 200, 400], values: [480, 560, 650] },
   ],
 };
