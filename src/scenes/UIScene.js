@@ -810,6 +810,7 @@ export default class UIScene extends Phaser.Scene {
       const res = await fetch('/api/players');
       if (!res.ok) throw new Error('Failed');
       const data = await res.json();
+      if (!this.serverPanelOpen) return; // panel was closed while loading
       loading.destroy();
       items.splice(items.indexOf(loading), 1);
 
@@ -860,7 +861,7 @@ export default class UIScene extends Phaser.Scene {
   }
 
   closeServerPanel() {
-    this.serverPanelItems.forEach(i => i.destroy());
+    this.serverPanelItems.forEach(i => { if (i && i.scene) i.destroy(); });
     this.serverPanelItems = [];
     this.serverPanelOpen = false;
   }
