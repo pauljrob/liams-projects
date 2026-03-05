@@ -121,6 +121,8 @@ export default class MachineGun {
   }
 
   fireAt(target) {
+    // Cap active projectiles to prevent lag when turrets are maxed out
+    if (this.projectiles.length >= 10) return;
     const angle = Math.atan2(target.y - this.y, target.x - this.x);
 
     // Rotate twin barrels to face target

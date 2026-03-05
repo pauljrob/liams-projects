@@ -366,6 +366,8 @@ export default class Turret {
   }
 
   createBurnPool(x, y) {
+    // Cap burn pools to prevent lag
+    if (this.burnTrails && this.burnTrails.length >= 5) return;
     const { burnDamage, burnDuration, burnTickRate, burnRadius } = this.def;
 
     // Green splash visual
@@ -417,6 +419,8 @@ export default class Turret {
   }
 
   fireAt(target, enemies) {
+    // Cap active projectiles to prevent lag when turrets are maxed out
+    if (this.projectiles.length >= 10) return;
     const { projectileColor, projectileSize, projectileSpeed, damage, splash } = this.def;
 
     const angle = Math.atan2(target.y - this.y, target.x - this.x);
