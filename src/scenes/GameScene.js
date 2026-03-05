@@ -1063,29 +1063,25 @@ export default class GameScene extends Phaser.Scene {
   }
 
   triggerSolarFlare() {
-    // Pick a random living enemy
+    // Pick a random living enemy — fires instantly (no announcement delay)
     const alive = this.enemies.filter(e => !e.dead);
     if (alive.length === 0) return;
     const target = alive[Phaser.Math.Between(0, alive.length - 1)];
 
-    this.showEventAnnouncement('SOLAR FLARE!', '#ffff44', () => {
-      if (target.dead) return;
+    // Bright beam from top of screen to the enemy
+    const beam = this.add.rectangle(target.x, target.y / 2, 6, target.y, 0xffff88)
+      .setDepth(250).setAlpha(0.9);
+    const glow = this.add.circle(target.x, target.y, 30, 0xffff44)
+      .setDepth(250).setAlpha(0.7);
 
-      // Bright beam from top of screen to the enemy
-      const beam = this.add.rectangle(target.x, target.y / 2, 6, target.y, 0xffff88)
-        .setDepth(250).setAlpha(0.9);
-      const glow = this.add.circle(target.x, target.y, 30, 0xffff44)
-        .setDepth(250).setAlpha(0.7);
-
-      this.tweens.add({
-        targets: [beam, glow], alpha: 0, duration: 600,
-        onComplete: () => { beam.destroy(); glow.destroy(); },
-      });
-
-      // Deal 50% of max HP
-      const dmg = Math.ceil(target.maxHp * 0.5);
-      target.takeDamage(dmg);
+    this.tweens.add({
+      targets: [beam, glow], alpha: 0, duration: 600,
+      onComplete: () => { beam.destroy(); glow.destroy(); },
     });
+
+    // Deal 50% of max HP
+    const dmg = Math.ceil(target.maxHp * 0.5);
+    target.takeDamage(dmg);
   }
 
   triggerBombRain() {
