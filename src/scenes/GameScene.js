@@ -169,6 +169,27 @@ export default class GameScene extends Phaser.Scene {
         callback: () => this.pollGifts(playerName),
       });
     }
+
+    // Player presence — heartbeat + join/leave notifications
+    this.sessionId = `s${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+    this.playerEventsSince = Date.now();
+    this.notificationY = 100; // stacks notifications downward
+
+    const heartbeatName = playerName || 'Anonymous';
+    // Send first heartbeat immediately
+    this.sendHeartbeat(heartbeatName);
+    // Then every 20 seconds
+    this.time.addEvent({
+      delay: 20000,
+      loop: true,
+      callback: () => this.sendHeartbeat(heartbeatName),
+    });
+    // Poll for join/leave events every 5 seconds
+    this.time.addEvent({
+      delay: 5000,
+      loop: true,
+      callback: () => this.pollPlayerEvents(),
+    });
   }
 
   async pollGifts(playerName) {
@@ -203,6 +224,60 @@ export default class GameScene extends Phaser.Scene {
     this.tweens.add({
       targets: announce, alpha: 1, duration: 300, yoyo: true, hold: 2000,
       onComplete: () => announce.destroy(),
+    });
+  }
+
+  async sendHeartbeat(name) {
+    try {
+      await fetch('/api/players', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name, sessionId: this.sessionId }),
+      });
+    } catch {
+      // Silent fail
+    }
+  }
+
+  async pollPlayerEvents() {
+    try {
+      const res = await fetch(`/api/players?since=${this.playerEventsSince}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const event of (data.events || [])) {
+        if (event.type === 'join') {
+          this.showPlayerNotification(`${event.name} joined`, '#44ff88');
+        } else if (event.type === 'leave') {
+          this.showPlayerNotification(`${event.name} left`, '#ff6666');
+        }
+        if (event.time > this.playerEventsSince) {
+          this.playerEventsSince = event.time;
+        }
+      }
+    } catch {
+      // Silent fail
+    }
+  }
+
+  showPlayerNotification(text, color) {
+    const W = this.scale.width;
+    const y = this.notificationY;
+    this.notificationY += 28;
+
+    const notif = this.add.text(W - 10, y, text, {
+      fontSize: '12px',
+      fill: color,
+      fontFamily: 'monospace',
+      backgroundColor: '#000000',
+      padding: { x: 6, y: 3 },
+    }).setOrigin(1, 0).setDepth(400).setAlpha(0);
+
+    this.tweens.add({
+      targets: notif, alpha: 1, duration: 200, hold: 3000, yoyo: true,
+      onComplete: () => {
+        notif.destroy();
+        this.notificationY -= 28;
+      },
     });
   }
 
