@@ -638,19 +638,19 @@ export default class UIScene extends Phaser.Scene {
       return;
     }
 
-    this.showGiftPlayerList();
+    this.showGiftServerList();
   }
 
-  async showGiftPlayerList() {
+  async showGiftServerList() {
     this.giftPanelOpen = true;
     const W = this.scale.width;
     const items = this.giftPanelItems;
 
-    const bg = this.add.rectangle(W - 120, 120, 220, 300, 0x111122, 0.95)
+    const bg = this.add.rectangle(W - 120, 140, 220, 320, 0x111122, 0.95)
       .setDepth(600).setStrokeStyle(1, 0xff66cc);
     items.push(bg);
 
-    const title = this.add.text(W - 120, 15, 'Gift a Player', {
+    const title = this.add.text(W - 120, 15, 'Select Server', {
       fontSize: '13px', fill: '#ff66cc', fontFamily: 'monospace',
     }).setOrigin(0.5).setDepth(601);
     items.push(title);
@@ -661,38 +661,96 @@ export default class UIScene extends Phaser.Scene {
     items.push(loading);
 
     try {
-      const res = await fetch('/api/leaderboard?limit=20');
+      const res = await fetch('/api/players');
       const data = await res.json();
+      if (!this.giftPanelOpen) return;
       loading.destroy();
 
-      if (!data.entries || data.entries.length === 0) {
-        const noPlayers = this.add.text(W - 120, 80, 'No players yet', {
+      if (!data.players || data.players.length === 0) {
+        const noPlayers = this.add.text(W - 120, 80, 'No players online', {
           fontSize: '11px', fill: '#888888', fontFamily: 'monospace',
         }).setOrigin(0.5).setDepth(601);
         items.push(noPlayers);
-        return;
-      }
+      } else {
+        // Group by server
+        const servers = {};
+        for (const p of data.players) {
+          const sn = p.serverName || 'Unknown';
+          if (!servers[sn]) servers[sn] = [];
+          servers[sn].push(p.name);
+        }
+        this._giftServers = servers;
 
-      let y = 35;
-      for (const entry of data.entries) {
-        const nameBtn = this.add.text(W - 120, y, entry.name, {
-          fontSize: '12px', fill: '#ffffff', fontFamily: 'monospace',
-          backgroundColor: '#222244', padding: { x: 8, y: 4 },
-        }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+        let y = 40;
+        for (const serverName of Object.keys(servers)) {
+          const count = servers[serverName].length;
+          const srvBtn = this.add.text(W - 120, y, `${serverName} (${count})`, {
+            fontSize: '12px', fill: '#00ddff', fontFamily: 'monospace',
+            backgroundColor: '#002233', padding: { x: 10, y: 5 },
+          }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
 
-        nameBtn.on('pointerdown', () => this.showGiftOptions(entry.name));
-        nameBtn.on('pointerover', () => nameBtn.setStyle({ fill: '#ff66cc' }));
-        nameBtn.on('pointerout', () => nameBtn.setStyle({ fill: '#ffffff' }));
-        items.push(nameBtn);
-        y += 24;
-        if (y > 250) break;
+          srvBtn.on('pointerdown', () => this.showGiftPlayersInServer(serverName));
+          srvBtn.on('pointerover', () => srvBtn.setStyle({ fill: '#ffffff' }));
+          srvBtn.on('pointerout', () => srvBtn.setStyle({ fill: '#00ddff' }));
+          items.push(srvBtn);
+          y += 28;
+          if (y > 260) break;
+        }
       }
     } catch {
       loading.setText('Failed to load');
     }
 
-    // Close button
-    const closeBtn = this.add.text(W - 120, 265, 'Close', {
+    const closeBtn = this.add.text(W - 120, 285, 'Close', {
+      fontSize: '12px', fill: '#ff6666', fontFamily: 'monospace',
+      backgroundColor: '#330000', padding: { x: 10, y: 4 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerdown', () => this.closeGiftPanel());
+    items.push(closeBtn);
+  }
+
+  showGiftPlayersInServer(serverName) {
+    this.closeGiftPanel();
+    this.giftPanelOpen = true;
+    const W = this.scale.width;
+    const items = this.giftPanelItems;
+    const players = (this._giftServers && this._giftServers[serverName]) || [];
+
+    const bg = this.add.rectangle(W - 120, 140, 220, 320, 0x111122, 0.95)
+      .setDepth(600).setStrokeStyle(1, 0xff66cc);
+    items.push(bg);
+
+    const title = this.add.text(W - 120, 15, `[${serverName}]`, {
+      fontSize: '13px', fill: '#00ddff', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(title);
+
+    let y = 40;
+    for (const playerName of players) {
+      const nameBtn = this.add.text(W - 120, y, playerName, {
+        fontSize: '12px', fill: '#ffffff', fontFamily: 'monospace',
+        backgroundColor: '#222244', padding: { x: 8, y: 4 },
+      }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+
+      nameBtn.on('pointerdown', () => this.showGiftOptions(playerName));
+      nameBtn.on('pointerover', () => nameBtn.setStyle({ fill: '#ff66cc' }));
+      nameBtn.on('pointerout', () => nameBtn.setStyle({ fill: '#ffffff' }));
+      items.push(nameBtn);
+      y += 24;
+      if (y > 250) break;
+    }
+
+    const backBtn = this.add.text(W - 160, 285, 'Back', {
+      fontSize: '12px', fill: '#aaaaaa', fontFamily: 'monospace',
+      backgroundColor: '#222222', padding: { x: 10, y: 4 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    backBtn.on('pointerdown', () => {
+      this.closeGiftPanel();
+      this.showGiftServerList();
+    });
+    items.push(backBtn);
+
+    const closeBtn = this.add.text(W - 80, 285, 'Close', {
       fontSize: '12px', fill: '#ff6666', fontFamily: 'monospace',
       backgroundColor: '#330000', padding: { x: 10, y: 4 },
     }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
@@ -738,7 +796,7 @@ export default class UIScene extends Phaser.Scene {
     }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
     backBtn.on('pointerdown', () => {
       this.closeGiftPanel();
-      this.showGiftPlayerList();
+      this.showGiftServerList();
     });
     items.push(backBtn);
 
