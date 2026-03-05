@@ -470,29 +470,9 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  showWaveAnnouncement(_wave, isBossWave, onComplete) {
-    const W = this.scale.width;
-    const H = this.scale.height;
-
-    const waveColor = isBossWave ? '#ff4444' : '#00ccff';
-    const waveLabel = isBossWave ? '⚠ BOSS WAVE ⚠' : 'Next Wave';
-
-    // Wave title — flash briefly then start
-    const title = this.add.text(W / 2, H / 2, waveLabel, {
-      fontSize: isBossWave ? '32px' : '28px',
-      fill: waveColor,
-      fontFamily: 'monospace',
-      stroke: '#000000',
-      strokeThickness: 4,
-    }).setOrigin(0.5).setDepth(300).setAlpha(0);
-
-    this.tweens.add({
-      targets: title, alpha: 1, duration: 300, yoyo: true, hold: 800,
-      onComplete: () => {
-        title.destroy();
-        onComplete();
-      },
-    });
+  showWaveAnnouncement(_wave, _isBossWave, onComplete) {
+    // No center-screen announcement — wave number shown in HUD
+    onComplete();
   }
 
   spawnEnemy(config) {
