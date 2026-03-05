@@ -489,7 +489,6 @@ export default class UIScene extends Phaser.Scene {
 
     this.giftPanelOpen = false;
     this.giftPanelItems = [];
-    this.adminPassword = null;
 
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
@@ -595,92 +594,7 @@ export default class UIScene extends Phaser.Scene {
       return;
     }
 
-    // If no admin password yet, prompt for it
-    if (!this.adminPassword) {
-      this.promptAdminPassword(() => this.showGiftPlayerList());
-      return;
-    }
-
     this.showGiftPlayerList();
-  }
-
-  promptAdminPassword(onSuccess) {
-    const W = this.scale.width;
-    const H = this.scale.height;
-    const items = [];
-
-    const bg = this.add.rectangle(W / 2, H / 2, 300, 160, 0x111122, 0.95)
-      .setDepth(600).setStrokeStyle(2, 0xff66cc);
-    items.push(bg);
-
-    const title = this.add.text(W / 2, H / 2 - 55, 'Enter Admin Password', {
-      fontSize: '14px', fill: '#ff66cc', fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(601);
-    items.push(title);
-
-    let typed = '';
-    const display = this.add.text(W / 2, H / 2 - 20, '|', {
-      fontSize: '18px', fill: '#ffffff', fontFamily: 'monospace',
-      backgroundColor: '#222233', padding: { x: 12, y: 4 },
-    }).setOrigin(0.5).setDepth(601);
-    items.push(display);
-
-    const updateDisplay = () => display.setText(('*'.repeat(typed.length)) + '|');
-
-    const submitBtn = this.add.text(W / 2 - 50, H / 2 + 25, 'Submit', {
-      fontSize: '13px', fill: '#44ff88', fontFamily: 'monospace',
-      backgroundColor: '#003322', padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
-    items.push(submitBtn);
-
-    const cancelBtn = this.add.text(W / 2 + 50, H / 2 + 25, 'Cancel', {
-      fontSize: '13px', fill: '#ff6666', fontFamily: 'monospace',
-      backgroundColor: '#330000', padding: { x: 10, y: 6 },
-    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
-    items.push(cancelBtn);
-
-    const statusText = this.add.text(W / 2, H / 2 + 55, '', {
-      fontSize: '11px', fill: '#ff6644', fontFamily: 'monospace',
-    }).setOrigin(0.5).setDepth(601);
-    items.push(statusText);
-
-    const cleanup = () => {
-      items.forEach(i => i.destroy());
-      window.removeEventListener('keydown', keyHandler, true);
-    };
-
-    const trySubmit = async () => {
-      if (!typed) return;
-      statusText.setText('Checking...');
-      try {
-        const res = await fetch('/api/leaderboard', {
-          method: 'DELETE',
-          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${typed}` },
-          body: JSON.stringify({ entryId: 'entry:validate-check' }),
-        });
-        if (res.status === 401) {
-          statusText.setText('Wrong password');
-        } else {
-          // 404 = password correct (entry doesn't exist)
-          this.adminPassword = typed;
-          cleanup();
-          onSuccess();
-        }
-      } catch {
-        statusText.setText('Network error');
-      }
-    };
-
-    submitBtn.on('pointerdown', trySubmit);
-    cancelBtn.on('pointerdown', cleanup);
-
-    const keyHandler = (e) => {
-      if (e.key === 'Enter') { trySubmit(); return; }
-      if (e.key === 'Escape') { cleanup(); return; }
-      if (e.key === 'Backspace') { typed = typed.slice(0, -1); updateDisplay(); return; }
-      if (e.key.length === 1) { typed += e.key; updateDisplay(); }
-    };
-    window.addEventListener('keydown', keyHandler, true);
   }
 
   async showGiftPlayerList() {
@@ -791,7 +705,7 @@ export default class UIScene extends Phaser.Scene {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${this.adminPassword}`,
+            'Authorization': 'Bearer admininside',
           },
           body: JSON.stringify({ targetName: playerName, type, amount }),
         });
