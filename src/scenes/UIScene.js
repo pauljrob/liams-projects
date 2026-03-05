@@ -803,22 +803,26 @@ export default class UIScene extends Phaser.Scene {
     const sendGift = async (type, amount) => {
       statusText.setText('Sending...');
       try {
+        const payload = { targetName: playerName, type, amount };
+        console.log('Sending gift:', payload);
         const res = await fetch('/api/gifts', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': 'Bearer admininside',
           },
-          body: JSON.stringify({ targetName: playerName, type, amount }),
+          body: JSON.stringify(payload),
         });
         if (res.ok) {
-          statusText.setText('Sent!').setStyle({ fill: '#44ff88' });
+          if (statusText.scene) statusText.setText('Sent!').setStyle({ fill: '#44ff88' });
         } else {
           const err = await res.json().catch(() => ({}));
-          statusText.setText(err.error || 'Failed').setStyle({ fill: '#ff6644' });
+          console.error('Gift failed:', err);
+          if (statusText.scene) statusText.setText(err.error || 'Failed').setStyle({ fill: '#ff6644' });
         }
-      } catch {
-        statusText.setText('Network error').setStyle({ fill: '#ff6644' });
+      } catch (e) {
+        console.error('Gift network error:', e);
+        if (statusText.scene) statusText.setText('Network error').setStyle({ fill: '#ff6644' });
       }
     };
 
