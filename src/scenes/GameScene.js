@@ -803,12 +803,11 @@ export default class GameScene extends Phaser.Scene {
   }
 
   fastForwardWave() {
-    if (!this.waveActive) return;
-    // Clear all pending spawns
+    // Clear all pending spawns and enemies
     this.spawnQueue = [];
     this.pendingMothership = null;
     this.mothershipSpawning = false;
-    // Force-kill every enemy without triggering splitter/carrier spawns
+    this.waveActive = false;
     for (const enemy of this.enemies) {
       if (!enemy.dead) {
         enemy.dead = true;
@@ -835,10 +834,7 @@ export default class GameScene extends Phaser.Scene {
     this.credits += avgCreditsPerWave * 1000;
     this.totalCreditsEarned += avgCreditsPerWave * 1000;
     this.currentWave += 1000;
-
-    // Don't spawn enemies — just set waveActive so auto clicker can fire again
-    this.waveActive = true;
-    this.spawnTimer = 0;
+    // waveActive stays false — auto clicker handles the loop
   }
 
   // Like startNextWave but without the announcement delay (used by auto clicker)

@@ -479,15 +479,11 @@ export default class UIScene extends Phaser.Scene {
     if (this.autoClickerOn) {
       this.autoClickerBtn.setText('🤖 Auto: ON');
       this.autoClickerBtn.setStyle({ fill: '#00ff88', backgroundColor: '#003322' });
-      // Skip waves rapidly
+      // Skip 1000 waves every tick
       this.autoClickerInterval = this.time.addEvent({
         delay: 100,
         loop: true,
-        callback: () => {
-          if (this.gameScene.waveActive) {
-            this.gameScene.fastForwardWave();
-          }
-        },
+        callback: () => this.gameScene.fastForwardWave(),
       });
     } else {
       this.autoClickerBtn.setText('🤖 Auto: OFF');
