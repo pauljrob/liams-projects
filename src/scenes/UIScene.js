@@ -520,17 +520,21 @@ export default class UIScene extends Phaser.Scene {
       cheatMode: gs.cheatMode,
     };
 
+    // Clamp values to API limits before sending
+    const wave = Math.min(Math.floor(stats.wave), 999999) || 1;
+    const kills = Math.min(Math.floor(stats.kills), 99999999) || 0;
+    const timeSurvivedMs = Math.max(Math.floor(stats.timeSurvivedMs), 0) || 0;
+    const creditsEarned = Math.min(Math.floor(stats.creditsEarned), 99999999) || 0;
+
     // Save to leaderboard, then kill the player
     fetch('/api/leaderboard', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        name: savedName,
-        wave: stats.wave,
-        kills: stats.kills,
-        timeSurvivedMs: stats.timeSurvivedMs,
-        creditsEarned: stats.creditsEarned,
-      }),
+      body: JSON.stringify({ name: savedName, wave, kills, timeSurvivedMs, creditsEarned }),
+    }).then(res => {
+      if (!res.ok) return res.json().then(e => console.error('Save failed:', e));
+    }).catch(err => {
+      console.error('Save network error:', err);
     }).finally(() => {
       // Kill the player — go to game over (score already saved)
       gs.waveActive = false;

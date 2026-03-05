@@ -98,7 +98,7 @@ async function handlePost(req, res) {
   const rateKey = `ratelimit:${ip}`;
   const attempts = await kv.incr(rateKey);
   if (attempts === 1) await kv.expire(rateKey, 60);
-  if (attempts > 3) {
+  if (attempts > 10) {
     return res.status(429).json({ error: 'Too many submissions. Try again in a minute.' });
   }
 
