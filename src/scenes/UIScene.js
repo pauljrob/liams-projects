@@ -848,7 +848,7 @@ export default class UIScene extends Phaser.Scene {
     if (!upgrades) return;
 
     const panelW = 200;
-    const panelH = 130;
+    const panelH = 160;
     // Position panel above/below turret, clamped to screen
     let px = turret.x - panelW / 2;
     let py = turret.y - panelH - 30;
@@ -909,8 +909,32 @@ export default class UIScene extends Phaser.Scene {
       items.push(btn);
     });
 
+    // Sell button — refund 50% of base cost + upgrade costs
+    const baseCost = GAME_CONFIG.turretCosts[turret.type] || 0;
+    let upgradeCost = 0;
+    upgrades.forEach((slot, i) => {
+      for (let lvl = 0; lvl < turret.upgradeLevels[i]; lvl++) {
+        upgradeCost += slot.costs[lvl];
+      }
+    });
+    const sellPrice = Math.floor((baseCost + upgradeCost) * 0.5);
+
+    const sellBtn = this.add.text(px + panelW / 2, py + panelH - 28, `Sell (${sellPrice}cr)`, {
+      fontSize: '11px', fill: '#ff6666', fontFamily: 'monospace',
+      backgroundColor: '#331111', padding: { x: 10, y: 4 },
+    }).setOrigin(0.5).setDepth(151).setInteractive({ useHandCursor: true });
+
+    sellBtn.on('pointerdown', () => {
+      this.gameScene.credits += sellPrice;
+      this.gameScene.sellTurret(turret);
+      this.closeUpgradePanel();
+    });
+    sellBtn.on('pointerover', () => sellBtn.setStyle({ fill: '#ffffff' }));
+    sellBtn.on('pointerout', () => sellBtn.setStyle({ fill: '#ff6666' }));
+    items.push(sellBtn);
+
     // Close hint
-    const hint = this.add.text(px + panelW / 2, py + panelH - 10, 'Click elsewhere to close', {
+    const hint = this.add.text(px + panelW / 2, py + panelH - 8, 'Click elsewhere to close', {
       fontSize: '9px', fill: '#446655', fontFamily: 'monospace',
     }).setOrigin(0.5, 1).setDepth(151);
     items.push(hint);

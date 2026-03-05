@@ -731,6 +731,28 @@ export default class GameScene extends Phaser.Scene {
     this.turrets.splice(idx, 1);
   }
 
+  sellTurret(turret) {
+    const idx = this.turrets.indexOf(turret);
+    if (idx === -1) return;
+    turret.destroyed = true;
+
+    // Green flash to indicate sale
+    const flash = this.add.graphics();
+    flash.fillStyle(0x00ff88, 0.8);
+    flash.fillCircle(turret.x, turret.y, 22);
+    this.tweens.add({
+      targets: flash,
+      alpha: 0,
+      scaleX: 2,
+      scaleY: 2,
+      duration: 300,
+      onComplete: () => flash.destroy(),
+    });
+
+    turret.destroy();
+    this.turrets.splice(idx, 1);
+  }
+
   damageTurret(turret, amount) {
     if (turret.destroyed) return;
     turret.hp -= amount;
