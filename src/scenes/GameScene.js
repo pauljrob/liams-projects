@@ -409,7 +409,7 @@ export default class GameScene extends Phaser.Scene {
         });
       } else {
         // Normal wave — baby ships in clusters + mothership + special enemies
-        const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul);
+        const babyCount = Math.min(Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul), 50);
         const motherHP = Math.ceil(WAVE_CONFIG.mothershipHealth(this.currentWave) * dm.hpMul);
         const wave = this.currentWave;
         // Cluster size scales with wave
@@ -783,6 +783,25 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
+  skipOneWave() {
+    if (!this.waveActive) return;
+    this.spawnQueue = [];
+    this.pendingMothership = null;
+    this.mothershipSpawning = false;
+    for (const enemy of this.enemies) {
+      if (!enemy.dead) {
+        enemy.dead = true;
+        this.credits += enemy.reward;
+        this.totalCreditsEarned += enemy.reward;
+        this.totalKills++;
+        enemy.destroy();
+      }
+    }
+    this.enemies = [];
+    this.waveActive = false;
+    this.startNextWaveImmediate();
+  }
+
   fastForwardWave() {
     if (!this.waveActive) return;
     // Clear all pending spawns
@@ -800,30 +819,26 @@ export default class GameScene extends Phaser.Scene {
       }
     }
     this.enemies = [];
-    this.waveActive = false;
 
-    // Skip ahead 1000 waves — accumulate approximate kills/credits
+    // Skip ahead 1000 waves instantly — use simple math instead of looping
     const dm = this.diffMod;
-    for (let w = this.currentWave + 1; w <= this.currentWave + 999; w++) {
-      const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(w) * dm.countMul);
-      // Approximate kills: babies + mothership + specials
-      let waveKills = babyCount + 1; // babies + mothership
-      if (w >= 2) waveKills += (w >= 6 ? 2 : 1) + 2; // splitters + minis
-      if (w >= 3) waveKills += 1; // shield bearer
-      if (w >= 4) waveKills += 1; // carrier
-      if (w >= 5) waveKills += 1; // emp frigate
-      this.totalKills += waveKills;
-      // Approximate credits
-      const babyReward = Math.ceil(GAME_CONFIG.rewards.babyShip * dm.rewardMul);
-      const motherReward = Math.ceil(GAME_CONFIG.rewards.mothership * dm.rewardMul);
-      const waveCredits = babyCount * babyReward + motherReward;
-      this.credits += waveCredits;
-      this.totalCreditsEarned += waveCredits;
-    }
-    this.currentWave += 999; // startNextWaveImmediate will add 1 more
+    const startW = this.currentWave + 1;
+    const endW = this.currentWave + 1000;
+    // Average baby count across the range: babyShipsPerWave = 4 + w*3
+    const avgBabies = Math.ceil((WAVE_CONFIG.babyShipsPerWave(startW) + WAVE_CONFIG.babyShipsPerWave(endW)) / 2 * dm.countMul);
+    const avgKillsPerWave = avgBabies + 6; // babies + mothership + specials
+    const babyReward = Math.ceil(GAME_CONFIG.rewards.babyShip * dm.rewardMul);
+    const motherReward = Math.ceil(GAME_CONFIG.rewards.mothership * dm.rewardMul);
+    const avgCreditsPerWave = avgBabies * babyReward + motherReward;
 
-    // Start the wave at the new number
-    this.startNextWaveImmediate();
+    this.totalKills += avgKillsPerWave * 1000;
+    this.credits += avgCreditsPerWave * 1000;
+    this.totalCreditsEarned += avgCreditsPerWave * 1000;
+    this.currentWave += 1000;
+
+    // Don't spawn enemies — just set waveActive so auto clicker can fire again
+    this.waveActive = true;
+    this.spawnTimer = 0;
   }
 
   // Like startNextWave but without the announcement delay (used by auto clicker)
@@ -844,7 +859,9 @@ export default class GameScene extends Phaser.Scene {
         type: 'mothership', hp: bossHP, fireRate: 3000, fireRange: motherFireRange, isBoss: true,
       });
     } else {
-      const babyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul);
+      // Cap baby count at 50 so high waves don't freeze the game
+      const rawBabyCount = Math.ceil(WAVE_CONFIG.babyShipsPerWave(this.currentWave) * dm.countMul);
+      const babyCount = Math.min(rawBabyCount, 50);
       const motherHP = Math.ceil(WAVE_CONFIG.mothershipHealth(this.currentWave) * dm.hpMul);
       const wave = this.currentWave;
       const clusterSize = Math.max(3, Math.floor(wave * 3));

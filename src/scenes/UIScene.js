@@ -393,7 +393,7 @@ export default class UIScene extends Phaser.Scene {
     }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).setVisible(false);
 
     this.skipWaveBtn
-      .on('pointerdown', () => this.gameScene.fastForwardWave())
+      .on('pointerdown', () => this.gameScene.skipOneWave())
       .on('pointerover', () => this.skipWaveBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.skipWaveBtn.setStyle({ fill: '#ffdd00' }));
 
