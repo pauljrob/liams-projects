@@ -459,6 +459,20 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerover', () => this.saveWaveBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.saveWaveBtn.setStyle({ fill: '#44ff88' }));
 
+    // Upgrade All button — hidden until secret code unlocked
+    this.upgradeAllBtn = this.add.text(GAME_CONFIG.width / 2 + 70, 36, 'Upgrade All', {
+      fontSize: '13px',
+      fill: '#ffaa00',
+      fontFamily: 'monospace',
+      backgroundColor: '#332200',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).setVisible(false);
+
+    this.upgradeAllBtn
+      .on('pointerdown', () => this.upgradeAllTurrets())
+      .on('pointerover', () => this.upgradeAllBtn.setStyle({ fill: '#ffffff' }))
+      .on('pointerout', () => this.upgradeAllBtn.setStyle({ fill: '#ffaa00' }));
+
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
@@ -544,6 +558,19 @@ export default class UIScene extends Phaser.Scene {
     });
   }
 
+  upgradeAllTurrets() {
+    const gs = this.gameScene;
+    for (const turret of gs.turrets) {
+      if (turret.destroyed) continue;
+      // Max out all 3 upgrade slots (each has 3 levels)
+      for (let slot = 0; slot < 3; slot++) {
+        while (turret.upgradeLevels[slot] < 3) {
+          turret.applyUpgrade(slot);
+        }
+      }
+    }
+  }
+
   showCheatExtras() {
     this.stopWaveBtn.setVisible(true);
     this.skipWaveBtn.setVisible(true);
@@ -552,6 +579,7 @@ export default class UIScene extends Phaser.Scene {
     this.addCreditsBtn.setVisible(true);
     this.eventsBtn.setVisible(true);
     this.saveWaveBtn.setVisible(true);
+    this.upgradeAllBtn.setVisible(true);
   }
 
   toggleEventsList() {
