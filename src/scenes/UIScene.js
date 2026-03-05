@@ -473,6 +473,24 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerover', () => this.upgradeAllBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.upgradeAllBtn.setStyle({ fill: '#ffaa00' }));
 
+    // Gift button — hidden until secret code unlocked
+    this.giftBtn = this.add.text(GAME_CONFIG.width / 2 - 210, 36, 'Gift', {
+      fontSize: '13px',
+      fill: '#ff66cc',
+      fontFamily: 'monospace',
+      backgroundColor: '#330022',
+      padding: { x: 8, y: 6 },
+    }).setOrigin(0.5, 0).setInteractive({ useHandCursor: true }).setVisible(false);
+
+    this.giftBtn
+      .on('pointerdown', () => this.openGiftPanel())
+      .on('pointerover', () => this.giftBtn.setStyle({ fill: '#ffffff' }))
+      .on('pointerout', () => this.giftBtn.setStyle({ fill: '#ff66cc' }));
+
+    this.giftPanelOpen = false;
+    this.giftPanelItems = [];
+    this.adminPassword = null;
+
     // Ultimate Boss spawn button — hidden until secret code unlocked
     this.ultimateBossBtn = this.add.text(GAME_CONFIG.width / 2, 62, '** SPAWN ULTIMATE BOSS **', {
       fontSize: '13px',
@@ -571,6 +589,233 @@ export default class UIScene extends Phaser.Scene {
     }
   }
 
+  openGiftPanel() {
+    if (this.giftPanelOpen) {
+      this.closeGiftPanel();
+      return;
+    }
+
+    // If no admin password yet, prompt for it
+    if (!this.adminPassword) {
+      this.promptAdminPassword(() => this.showGiftPlayerList());
+      return;
+    }
+
+    this.showGiftPlayerList();
+  }
+
+  promptAdminPassword(onSuccess) {
+    const W = this.scale.width;
+    const H = this.scale.height;
+    const items = [];
+
+    const bg = this.add.rectangle(W / 2, H / 2, 300, 160, 0x111122, 0.95)
+      .setDepth(600).setStrokeStyle(2, 0xff66cc);
+    items.push(bg);
+
+    const title = this.add.text(W / 2, H / 2 - 55, 'Enter Admin Password', {
+      fontSize: '14px', fill: '#ff66cc', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(title);
+
+    let typed = '';
+    const display = this.add.text(W / 2, H / 2 - 20, '|', {
+      fontSize: '18px', fill: '#ffffff', fontFamily: 'monospace',
+      backgroundColor: '#222233', padding: { x: 12, y: 4 },
+    }).setOrigin(0.5).setDepth(601);
+    items.push(display);
+
+    const updateDisplay = () => display.setText(('*'.repeat(typed.length)) + '|');
+
+    const submitBtn = this.add.text(W / 2 - 50, H / 2 + 25, 'Submit', {
+      fontSize: '13px', fill: '#44ff88', fontFamily: 'monospace',
+      backgroundColor: '#003322', padding: { x: 10, y: 6 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    items.push(submitBtn);
+
+    const cancelBtn = this.add.text(W / 2 + 50, H / 2 + 25, 'Cancel', {
+      fontSize: '13px', fill: '#ff6666', fontFamily: 'monospace',
+      backgroundColor: '#330000', padding: { x: 10, y: 6 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    items.push(cancelBtn);
+
+    const statusText = this.add.text(W / 2, H / 2 + 55, '', {
+      fontSize: '11px', fill: '#ff6644', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(statusText);
+
+    const cleanup = () => {
+      items.forEach(i => i.destroy());
+      window.removeEventListener('keydown', keyHandler, true);
+    };
+
+    const trySubmit = async () => {
+      if (!typed) return;
+      statusText.setText('Checking...');
+      try {
+        const res = await fetch('/api/leaderboard', {
+          method: 'DELETE',
+          headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${typed}` },
+          body: JSON.stringify({ entryId: 'entry:validate-check' }),
+        });
+        if (res.status === 401) {
+          statusText.setText('Wrong password');
+        } else {
+          // 404 = password correct (entry doesn't exist)
+          this.adminPassword = typed;
+          cleanup();
+          onSuccess();
+        }
+      } catch {
+        statusText.setText('Network error');
+      }
+    };
+
+    submitBtn.on('pointerdown', trySubmit);
+    cancelBtn.on('pointerdown', cleanup);
+
+    const keyHandler = (e) => {
+      if (e.key === 'Enter') { trySubmit(); return; }
+      if (e.key === 'Escape') { cleanup(); return; }
+      if (e.key === 'Backspace') { typed = typed.slice(0, -1); updateDisplay(); return; }
+      if (e.key.length === 1) { typed += e.key; updateDisplay(); }
+    };
+    window.addEventListener('keydown', keyHandler, true);
+  }
+
+  async showGiftPlayerList() {
+    this.giftPanelOpen = true;
+    const W = this.scale.width;
+    const items = this.giftPanelItems;
+
+    const bg = this.add.rectangle(W - 120, 120, 220, 300, 0x111122, 0.95)
+      .setDepth(600).setStrokeStyle(1, 0xff66cc);
+    items.push(bg);
+
+    const title = this.add.text(W - 120, 15, 'Gift a Player', {
+      fontSize: '13px', fill: '#ff66cc', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(title);
+
+    const loading = this.add.text(W - 120, 80, 'Loading...', {
+      fontSize: '11px', fill: '#aaaaaa', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(loading);
+
+    try {
+      const res = await fetch('/api/leaderboard?limit=20');
+      const data = await res.json();
+      loading.destroy();
+
+      if (!data.entries || data.entries.length === 0) {
+        const noPlayers = this.add.text(W - 120, 80, 'No players yet', {
+          fontSize: '11px', fill: '#888888', fontFamily: 'monospace',
+        }).setOrigin(0.5).setDepth(601);
+        items.push(noPlayers);
+        return;
+      }
+
+      let y = 35;
+      for (const entry of data.entries) {
+        const nameBtn = this.add.text(W - 120, y, entry.name, {
+          fontSize: '12px', fill: '#ffffff', fontFamily: 'monospace',
+          backgroundColor: '#222244', padding: { x: 8, y: 4 },
+        }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+
+        nameBtn.on('pointerdown', () => this.showGiftOptions(entry.name));
+        nameBtn.on('pointerover', () => nameBtn.setStyle({ fill: '#ff66cc' }));
+        nameBtn.on('pointerout', () => nameBtn.setStyle({ fill: '#ffffff' }));
+        items.push(nameBtn);
+        y += 24;
+        if (y > 250) break;
+      }
+    } catch {
+      loading.setText('Failed to load');
+    }
+
+    // Close button
+    const closeBtn = this.add.text(W - 120, 265, 'Close', {
+      fontSize: '12px', fill: '#ff6666', fontFamily: 'monospace',
+      backgroundColor: '#330000', padding: { x: 10, y: 4 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    closeBtn.on('pointerdown', () => this.closeGiftPanel());
+    items.push(closeBtn);
+  }
+
+  showGiftOptions(playerName) {
+    this.closeGiftPanel();
+    this.giftPanelOpen = true;
+    const W = this.scale.width;
+    const items = this.giftPanelItems;
+
+    const bg = this.add.rectangle(W - 120, 100, 220, 180, 0x111122, 0.95)
+      .setDepth(600).setStrokeStyle(1, 0xff66cc);
+    items.push(bg);
+
+    const title = this.add.text(W - 120, 30, `Gift to ${playerName}`, {
+      fontSize: '12px', fill: '#ff66cc', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(title);
+
+    const creditsBtn = this.add.text(W - 120, 70, '+500 Credits', {
+      fontSize: '14px', fill: '#ffdd00', fontFamily: 'monospace',
+      backgroundColor: '#333300', padding: { x: 12, y: 8 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    items.push(creditsBtn);
+
+    const hpBtn = this.add.text(W - 120, 110, '+3 Base HP', {
+      fontSize: '14px', fill: '#ff4444', fontFamily: 'monospace',
+      backgroundColor: '#330000', padding: { x: 12, y: 8 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    items.push(hpBtn);
+
+    const statusText = this.add.text(W - 120, 145, '', {
+      fontSize: '11px', fill: '#44ff88', fontFamily: 'monospace',
+    }).setOrigin(0.5).setDepth(601);
+    items.push(statusText);
+
+    const backBtn = this.add.text(W - 120, 170, 'Back', {
+      fontSize: '12px', fill: '#aaaaaa', fontFamily: 'monospace',
+      backgroundColor: '#222222', padding: { x: 10, y: 4 },
+    }).setOrigin(0.5).setDepth(601).setInteractive({ useHandCursor: true });
+    backBtn.on('pointerdown', () => {
+      this.closeGiftPanel();
+      this.showGiftPlayerList();
+    });
+    items.push(backBtn);
+
+    const sendGift = async (type, amount) => {
+      statusText.setText('Sending...');
+      try {
+        const res = await fetch('/api/gifts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${this.adminPassword}`,
+          },
+          body: JSON.stringify({ targetName: playerName, type, amount }),
+        });
+        if (res.ok) {
+          statusText.setText('Sent!').setStyle({ fill: '#44ff88' });
+        } else {
+          const err = await res.json().catch(() => ({}));
+          statusText.setText(err.error || 'Failed').setStyle({ fill: '#ff6644' });
+        }
+      } catch {
+        statusText.setText('Network error').setStyle({ fill: '#ff6644' });
+      }
+    };
+
+    creditsBtn.on('pointerdown', () => sendGift('credits', 500));
+    hpBtn.on('pointerdown', () => sendGift('hp', 3));
+  }
+
+  closeGiftPanel() {
+    this.giftPanelItems.forEach(i => i.destroy());
+    this.giftPanelItems = [];
+    this.giftPanelOpen = false;
+  }
+
   showCheatExtras() {
     this.stopWaveBtn.setVisible(true);
     this.skipWaveBtn.setVisible(true);
@@ -580,6 +825,7 @@ export default class UIScene extends Phaser.Scene {
     this.eventsBtn.setVisible(true);
     this.saveWaveBtn.setVisible(true);
     this.upgradeAllBtn.setVisible(true);
+    this.giftBtn.setVisible(true);
   }
 
   toggleEventsList() {

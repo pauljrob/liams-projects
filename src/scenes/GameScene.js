@@ -159,6 +159,51 @@ export default class GameScene extends Phaser.Scene {
         });
       },
     });
+
+    // Poll for gifts every 10 seconds
+    const playerName = localStorage.getItem('spaceTD_playerName') || '';
+    if (playerName) {
+      this.time.addEvent({
+        delay: 10000,
+        loop: true,
+        callback: () => this.pollGifts(playerName),
+      });
+    }
+  }
+
+  async pollGifts(playerName) {
+    try {
+      const res = await fetch(`/api/gifts?player=${encodeURIComponent(playerName)}`);
+      if (!res.ok) return;
+      const data = await res.json();
+      for (const gift of (data.gifts || [])) {
+        if (gift.type === 'credits') {
+          this.credits += gift.amount;
+          this.showGiftAnnouncement(`Gift: +${gift.amount} Credits!`, '#ffdd00');
+        } else if (gift.type === 'hp') {
+          this.baseHP += gift.amount;
+          this.showGiftAnnouncement(`Gift: +${gift.amount} Base HP!`, '#ff4444');
+        }
+      }
+    } catch {
+      // Silent fail — retry next poll
+    }
+  }
+
+  showGiftAnnouncement(text, color) {
+    const W = this.scale.width;
+    const announce = this.add.text(W / 2, 100, text, {
+      fontSize: '22px',
+      fill: color,
+      fontFamily: 'monospace',
+      stroke: '#000000',
+      strokeThickness: 4,
+    }).setOrigin(0.5).setDepth(400).setAlpha(0);
+
+    this.tweens.add({
+      targets: announce, alpha: 1, duration: 300, yoyo: true, hold: 2000,
+      onComplete: () => announce.destroy(),
+    });
   }
 
   createBackground() {
