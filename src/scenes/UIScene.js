@@ -31,6 +31,20 @@ export default class UIScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0, 0);
 
+    // Pause button — always visible
+    this.paused = false;
+    this.pauseBtn = this.add.text(GAME_CONFIG.width - 10, 60, '⏸ Pause', {
+      fontSize: '14px',
+      fill: '#ffffff',
+      fontFamily: 'monospace',
+      backgroundColor: '#333333',
+      padding: { x: 10, y: 6 },
+    }).setOrigin(1, 0).setInteractive({ useHandCursor: true });
+
+    this.pauseBtn.on('pointerdown', () => this.togglePause());
+    this.pauseBtn.on('pointerover', () => this.pauseBtn.setStyle({ fill: '#00ffcc' }));
+    this.pauseBtn.on('pointerout', () => this.pauseBtn.setStyle({ fill: this.paused ? '#ffdd00' : '#ffffff' }));
+
     this.activeBtn = null;
     this.hintText = null;
     this.ultraUnlocked = false;
@@ -503,6 +517,19 @@ export default class UIScene extends Phaser.Scene {
       .on('pointerdown', () => this.gameScene.spawnUltimateBoss())
       .on('pointerover', () => this.ultimateBossBtn.setStyle({ fill: '#ffffff' }))
       .on('pointerout', () => this.ultimateBossBtn.setStyle({ fill: '#ff00ff' }));
+  }
+
+  togglePause() {
+    this.paused = !this.paused;
+    if (this.paused) {
+      this.pauseBtn.setText('▶ Resume');
+      this.pauseBtn.setStyle({ fill: '#ffdd00', backgroundColor: '#333300' });
+      this.gameScene.scene.pause('GameScene');
+    } else {
+      this.pauseBtn.setText('⏸ Pause');
+      this.pauseBtn.setStyle({ fill: '#ffffff', backgroundColor: '#333333' });
+      this.gameScene.scene.resume('GameScene');
+    }
   }
 
   toggleAutoClicker() {
