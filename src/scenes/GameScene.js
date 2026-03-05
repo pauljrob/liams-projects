@@ -470,12 +470,12 @@ export default class GameScene extends Phaser.Scene {
     });
   }
 
-  showWaveAnnouncement(wave, isBossWave, onComplete) {
+  showWaveAnnouncement(_wave, isBossWave, onComplete) {
     const W = this.scale.width;
     const H = this.scale.height;
 
     const waveColor = isBossWave ? '#ff4444' : '#00ccff';
-    const waveLabel = isBossWave ? `⚠ BOSS WAVE ${wave} ⚠` : `Wave ${wave}`;
+    const waveLabel = isBossWave ? '⚠ BOSS WAVE ⚠' : 'Next Wave';
 
     // Wave title — flash briefly then start
     const title = this.add.text(W / 2, H / 2, waveLabel, {

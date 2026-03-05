@@ -19,11 +19,6 @@ export default class UIScene extends Phaser.Scene {
       fontFamily: 'monospace',
     }).setOrigin(0, 0);
 
-    this.waveText = this.add.text(10, 35, `Wave: 1`, {
-      fontSize: '18px',
-      fill: '#ffffff',
-      fontFamily: 'monospace',
-    }).setOrigin(0, 0);
 
     this.hpText = this.add.text(10, 60, `Base HP: ${this.gameScene.baseHP}`, {
       fontSize: '18px',
@@ -735,7 +730,6 @@ export default class UIScene extends Phaser.Scene {
   update() {
     if (this.gameScene) {
       this.creditsText.setText(`Credits: ${this.gameScene.credits}`);
-      this.waveText.setText(`Wave: ${this.gameScene.currentWave}`);
       this.hpText.setText(`Base HP: ${this.gameScene.baseHP}`);
     }
   }
